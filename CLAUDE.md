@@ -19,7 +19,7 @@ It is **not** payroll. See the out-of-scope table in `docs/requirements.md`.
 
 | Layer | Choice |
 |---|---|
-| Backend | Node 22 + TypeScript, Fastify |
+| Backend | Node 24 (Active LTS) + TypeScript, Fastify |
 | ORM | Drizzle |
 | Database | PostgreSQL 16 |
 | Validation | Zod at the HTTP boundary |
