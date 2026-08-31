@@ -1,3 +1,5 @@
+import { exponentOf } from './Currency.js';
+
 /**
  * An amount of money: an integer count of minor units plus a currency code.
  * Immutable — every operation returns a new instance.
@@ -14,6 +16,7 @@ export class Money {
         `Money amount must be a whole number of minor units, got ${amountMinor}`,
       );
     }
+    exponentOf(currency); // throws UnknownCurrencyError for an unrecognised code
     return new Money(amountMinor, currency);
   }
 }
