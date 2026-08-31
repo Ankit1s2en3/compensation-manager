@@ -372,3 +372,81 @@ is flat, the dashboard is flat and the demo falls over:
 - 1–5 salary records each, spread over the last 1–6 years
 - ~3% of employees carry a `CORRECTION` in their history, so the audit view is not empty
 - ~5% `TERMINATED`, so status filtering is exercised
+
+---
+
+## 10. Domain API
+
+Sections 1–9 describe the database. This section describes the `domain/compensation/`
+objects, so the code and the schema stay in step.
+
+### `SalaryRecord`
+
+One row, as an object. Immutable. Holds `Money` rather than a bare number:
+
+```ts
+class SalaryRecord {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly amount: Money;
+  readonly effectiveFrom: LocalDate;
+  readonly effectiveTo: LocalDate | null;   // null = open
+  readonly changeReason: ChangeReason;
+  readonly note: string | null;
+  readonly supersededAt: Date | null;       // null = live
+  readonly supersededById: string | null;
+
+  get isLive(): boolean;                    // supersededAt === null
+  get isOpen(): boolean;                    // effectiveTo === null
+  covers(on: LocalDate): boolean;           // effectiveFrom <= on <= (effectiveTo ?? ∞)
+}
+```
+
+### `SalaryTimeline`
+
+Every record for one employee, plus the rules. **Pure — no I/O, no `new Date()`.**
+
+```ts
+class SalaryTimeline {
+  constructor(records: readonly SalaryRecord[], hireDate: LocalDate) {}
+
+  live(): SalaryRecord[]                      // not superseded
+  currentAt(on: LocalDate): SalaryRecord|null // the live record covering `on`
+  latest(): SalaryRecord | null               // live record with the greatest effectiveFrom
+  openPeriod(): SalaryRecord | null           // live record with effectiveTo === null
+
+  recordChange(cmd: PendingChange): TimelineWrites   // validates; throws on I3/I8/I4
+  correct(recordId, amount: Money, note): TimelineWrites  // throws on I5
+}
+```
+
+**`currentAt` is invariant §7's "current salary" query, expressed in code.** The repository
+also implements it in SQL, because looking up one employee should not load their whole history.
+The duplication is deliberate and narrow: the domain version is the specification and is what
+the tests cover; the SQL version is an optimisation that must agree with it.
+
+### The domain does not write
+
+`recordChange` and `correct` return a **description** of the writes rather than performing
+them, which is what keeps `domain/` free of I/O:
+
+```ts
+type TimelineWrites = {
+  closePeriod?: { recordId: string; effectiveTo: LocalDate };
+  supersede?:   { recordId: string; at: Date };
+  insert:       NewSalaryRecord;
+};
+```
+
+The application layer executes them inside one transaction (I7). The domain decides *what*
+must happen; the application decides *how*.
+
+### Dates are calendar dates, not instants
+
+`effective_from` and `effective_to` are days, with no time and no timezone. Using a JavaScript
+`Date` invites the classic bug where `2026-04-01` becomes `2026-03-31T18:30:00Z` in IST and an
+effective date silently moves a day. Use a `LocalDate` holding a `YYYY-MM-DD` string — ISO
+dates compare correctly as plain strings, so ordering and range checks stay trivial.
+
+`Clock` returns `today(): LocalDate` for effective-dating and `now(): Date` for
+`superseded_at`, which genuinely is an instant.
