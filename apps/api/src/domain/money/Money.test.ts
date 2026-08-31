@@ -38,3 +38,13 @@ describe('Money.minus', () => {
     );
   });
 });
+
+describe('Money immutability', () => {
+  it('plus() returns a new instance and leaves the original untouched', () => {
+    const original = Money.of(1000, 'USD');
+    const result = original.plus(Money.of(500, 'USD'));
+
+    expect(result).not.toBe(original);
+    expect(original.amountMinor).toBe(1000);
+  });
+});
