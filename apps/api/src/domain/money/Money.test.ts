@@ -27,3 +27,14 @@ describe('Money.plus', () => {
     );
   });
 });
+
+describe('Money.minus', () => {
+  it('subtracts within a currency but rejects a currency mismatch', () => {
+    const remainder = Money.of(1000, 'USD').minus(Money.of(250, 'USD'));
+    expect(remainder.amountMinor).toBe(750);
+
+    expect(() => Money.of(1000, 'USD').minus(Money.of(1, 'JPY'))).toThrow(
+      CurrencyMismatchError,
+    );
+  });
+});

@@ -28,9 +28,18 @@ export class Money {
   }
 
   plus(other: Money): Money {
+    this.assertSameCurrency(other);
+    return Money.of(this.amountMinor + other.amountMinor, this.currency);
+  }
+
+  minus(other: Money): Money {
+    this.assertSameCurrency(other);
+    return Money.of(this.amountMinor - other.amountMinor, this.currency);
+  }
+
+  private assertSameCurrency(other: Money): void {
     if (other.currency !== this.currency) {
       throw new CurrencyMismatchError(this.currency, other.currency);
     }
-    return Money.of(this.amountMinor + other.amountMinor, this.currency);
   }
 }
