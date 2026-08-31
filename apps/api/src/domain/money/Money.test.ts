@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { UnknownCurrencyError } from './Currency.js';
-import { Money } from './Money.js';
+import { CurrencyMismatchError, Money } from './Money.js';
 
 describe('Money.of', () => {
   it('rejects an amount that is not a whole number of minor units', () => {
@@ -19,5 +19,11 @@ describe('Money.plus', () => {
 
     expect(total.amountMinor).toBe(1250);
     expect(total.currency).toBe('USD');
+  });
+
+  it('throws CurrencyMismatchError when the two currencies differ', () => {
+    expect(() => Money.of(1000, 'USD').plus(Money.of(1000, 'EUR'))).toThrow(
+      CurrencyMismatchError,
+    );
   });
 });
