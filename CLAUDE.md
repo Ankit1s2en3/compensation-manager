@@ -19,7 +19,7 @@ It is **not** payroll. See the out-of-scope table in `docs/requirements.md`.
 
 | Layer | Choice |
 |---|---|
-| Backend | Node 24 (Active LTS) + TypeScript, Fastify |
+| Backend | Node 24 (Active LTS) + TypeScript, Express 5 |
 | ORM | Drizzle |
 | Database | PostgreSQL 16 |
 | Validation | Zod at the HTTP boundary |
@@ -49,7 +49,7 @@ apps/api/src/
 ├── application/     use cases, one class per action
 │   └── ports/       interfaces only — EmployeeRepository, SalaryRecordRepository, ExchangeRateProvider
 ├── infrastructure/  drizzle schema, migrations, repository implementations
-├── http/            routes (thin), zod schemas, middleware
+├── http/            express routes (thin), zod schemas, middleware
 ├── seed/
 └── container.ts     composition root
 ```
