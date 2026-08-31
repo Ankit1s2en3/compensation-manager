@@ -12,3 +12,12 @@ describe('Money.of', () => {
     expect(() => Money.of(1000, 'XYZ')).toThrow(UnknownCurrencyError);
   });
 });
+
+describe('Money.plus', () => {
+  it('adds two amounts of the same currency', () => {
+    const total = Money.of(1000, 'USD').plus(Money.of(250, 'USD'));
+
+    expect(total.amountMinor).toBe(1250);
+    expect(total.currency).toBe('USD');
+  });
+});

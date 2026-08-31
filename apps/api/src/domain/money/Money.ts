@@ -19,4 +19,8 @@ export class Money {
     exponentOf(currency); // throws UnknownCurrencyError for an unrecognised code
     return new Money(amountMinor, currency);
   }
+
+  plus(other: Money): Money {
+    return Money.of(this.amountMinor + other.amountMinor, this.currency);
+  }
 }
