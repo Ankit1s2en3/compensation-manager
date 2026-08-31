@@ -38,6 +38,9 @@ export class SalaryTimeline {
       supersededAt: null,
       supersededById: null,
     };
-    return new SalaryTimeline({ hireDate: this.#hireDate, records: [record] });
+    return new SalaryTimeline({
+      hireDate: this.#hireDate,
+      records: [...this.#records, record],
+    });
   }
 }
