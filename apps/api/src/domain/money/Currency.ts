@@ -14,6 +14,16 @@ export const CURRENCY_EXPONENTS = {
 
 export type CurrencyCode = keyof typeof CURRENCY_EXPONENTS;
 
+export class UnknownCurrencyError extends Error {
+  constructor(code: string) {
+    super(`Unknown currency code: ${code}`);
+    this.name = 'UnknownCurrencyError';
+  }
+}
+
 export function exponentOf(code: string): number {
+  if (!(code in CURRENCY_EXPONENTS)) {
+    throw new UnknownCurrencyError(code);
+  }
   return CURRENCY_EXPONENTS[code as CurrencyCode];
 }
