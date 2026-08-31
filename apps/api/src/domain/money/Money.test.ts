@@ -48,3 +48,14 @@ describe('Money immutability', () => {
     expect(original.amountMinor).toBe(1000);
   });
 });
+
+describe('Money.format', () => {
+  it('places the decimal point per the currency exponent', () => {
+    expect(Money.of(123456, 'USD').format()).toBe('1234.56');
+    expect(Money.of(200000000, 'INR').format()).toBe('2000000.00');
+  });
+
+  it('renders a zero-exponent currency (JPY) with no decimal part', () => {
+    expect(Money.of(10000000, 'JPY').format()).toBe('10000000');
+  });
+});

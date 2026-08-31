@@ -42,4 +42,16 @@ export class Money {
       throw new CurrencyMismatchError(this.currency, other.currency);
     }
   }
+
+  /** Plain decimal string, decimal places driven by the currency exponent. */
+  format(): string {
+    const exponent = exponentOf(this.currency);
+    if (exponent === 0) {
+      return String(this.amountMinor);
+    }
+    const divisor = 10 ** exponent;
+    const major = Math.trunc(this.amountMinor / divisor);
+    const minor = Math.abs(this.amountMinor % divisor);
+    return `${major}.${String(minor).padStart(exponent, '0')}`;
+  }
 }
