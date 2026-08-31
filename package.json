@@ -1,0 +1,23 @@
+{
+  "name": "compensation-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Salary management for a 10,000-employee, multi-country organisation. Not payroll.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "test": "npm run test --workspaces --if-present",
+    "test:unit": "npm run test:unit -w apps/api",
+    "test:integration": "npm run test:integration -w apps/api",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
