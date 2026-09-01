@@ -382,48 +382,56 @@ objects, so the code and the schema stay in step.
 
 ### `SalaryRecord`
 
-One row, as an object. Immutable. Holds `Money` rather than a bare number:
+A plain **interface** — one persisted row — plus free helper functions. Not a class: the
+record carries no behaviour the timeline can't express, so keeping it a data shape lets
+repository rows map to it directly.
 
 ```ts
-class SalaryRecord {
-  readonly id: string;
-  readonly employeeId: string;
-  readonly amount: Money;
-  readonly effectiveFrom: LocalDate;
-  readonly effectiveTo: LocalDate | null;   // null = open
-  readonly changeReason: ChangeReason;
-  readonly note: string | null;
-  readonly supersededAt: Date | null;       // null = live
-  readonly supersededById: string | null;
-
-  get isLive(): boolean;                    // supersededAt === null
-  get isOpen(): boolean;                    // effectiveTo === null
-  covers(on: LocalDate): boolean;           // effectiveFrom <= on <= (effectiveTo ?? ∞)
+interface NewSalaryRecord {          // produced by the domain, not yet persisted
+  amount: Money;                     // integer minor units + currency, never a bare number
+  effectiveFrom: string;             // ISO YYYY-MM-DD
+  effectiveTo: string | null;        // null = open
+  changeReason: ChangeReason;        // HIRE | MERIT | PROMOTION | MARKET_ADJUSTMENT
+  note: string | null;
 }
+
+interface SalaryRecord extends NewSalaryRecord {
+  id: string;
+  supersededAt: Date | null;         // null = live
+  supersededById: string | null;
+}
+
+function isLive(r: SalaryRecord): boolean;               // supersededAt === null
+function covers(r: SalaryRecord, date: string): boolean; // effectiveFrom <= date <= (effectiveTo ?? ∞)
 ```
+
+`NewSalaryRecord` has no `id` and no `superseded*`: the database assigns the id, and a fresh
+insert is always live. The application layer sets the original's `supersededById` once the
+replacement insert returns.
 
 ### `SalaryTimeline`
 
-Every record for one employee, plus the rules. **Pure — no I/O, no `new Date()`.**
+Every record for one employee, plus the rules from §5. **Pure — no I/O, and no `new Date()`
+anywhere beneath it.**
 
 ```ts
 class SalaryTimeline {
-  constructor(records: readonly SalaryRecord[], hireDate: LocalDate) {}
+  constructor(params: { hireDate: string; records: readonly SalaryRecord[] });
 
-  live(): SalaryRecord[]                      // not superseded
-  currentAt(on: LocalDate): SalaryRecord|null // the live record covering `on`
-  latest(): SalaryRecord | null               // live record with the greatest effectiveFrom
-  openPeriod(): SalaryRecord | null           // live record with effectiveTo === null
+  currentAt(date: string): SalaryRecord | null;           // the live record covering `date`
 
-  recordChange(cmd: PendingChange): TimelineWrites   // validates; throws on I3/I8/I4
-  correct(recordId, amount: Money, note): TimelineWrites  // throws on I5
+  recordChange(input: SalaryChangeInput): TimelineWrites; // throws on I3, I8, I4
+  correct(recordId: string, amount: Money, note: string, clock: Clock): TimelineWrites; // throws on I5
 }
 ```
 
+The "latest live record" and "open live period" lookups are private helpers — the I8 check
+and the period-close need them, nothing outside the class does yet, so they aren't exposed.
+
 **`currentAt` is invariant §7's "current salary" query, expressed in code.** The repository
-also implements it in SQL, because looking up one employee should not load their whole history.
-The duplication is deliberate and narrow: the domain version is the specification and is what
-the tests cover; the SQL version is an optimisation that must agree with it.
+also implements it in SQL, because looking up one employee should not load their whole
+history. The duplication is deliberate and narrow: the domain version is the specification
+and is what the tests cover; the SQL version is an optimisation that must agree with it.
 
 ### The domain does not write
 
@@ -431,22 +439,29 @@ the tests cover; the SQL version is an optimisation that must agree with it.
 them, which is what keeps `domain/` free of I/O:
 
 ```ts
-type TimelineWrites = {
-  closePeriod?: { recordId: string; effectiveTo: LocalDate };
+interface TimelineWrites {
+  closePeriod?: { recordId: string; effectiveTo: string };  // ISO YYYY-MM-DD
   supersede?:   { recordId: string; at: Date };
   insert:       NewSalaryRecord;
-};
+}
 ```
 
-The application layer executes them inside one transaction (I7). The domain decides *what*
-must happen; the application decides *how*.
+A raise returns `{ closePeriod?, insert }` — no `closePeriod` for an employee's first
+record. A correction returns `{ supersede, insert }`. The application layer runs the parts
+in one transaction (I7) and writes `supersededById` back once it knows the new row's id. The
+domain decides *what* must happen; the application decides *how*.
 
-### Dates are calendar dates, not instants
+### Dates are ISO strings, not a value object
 
-`effective_from` and `effective_to` are days, with no time and no timezone. Using a JavaScript
-`Date` invites the classic bug where `2026-04-01` becomes `2026-03-31T18:30:00Z` in IST and an
-effective date silently moves a day. Use a `LocalDate` holding a `YYYY-MM-DD` string — ISO
-dates compare correctly as plain strings, so ordering and range checks stay trivial.
+`effectiveFrom`, `effectiveTo` and `hireDate` are calendar dates — no time, no timezone —
+held as `YYYY-MM-DD` strings. There is no `LocalDate` wrapper, and none was needed:
 
-`Clock` returns `today(): LocalDate` for effective-dating and `now(): Date` for
-`superseded_at`, which genuinely is an instant.
+- **Nothing in `domain/` ever constructs a `Date`.** Ordering and range checks are string
+  `<` / `<=` — ISO-8601 sorts chronologically. "The day before `effectiveFrom`" is
+  `previousDay()`, pure month-length arithmetic on the numeric parts. The bug a `LocalDate`
+  would guard against — `2026-04-01` sliding to `2026-03-31T18:30:00Z` in IST — cannot
+  arise, because the `Date` that causes it is never created.
+- A wrapper would be ceremony over a string that already compares correctly.
+
+`Clock` provides `now(): Date` for real instants (`superseded_at`) and `today(): string` for
+the effective-dating comparisons that need "now".
