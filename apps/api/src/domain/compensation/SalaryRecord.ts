@@ -25,3 +25,19 @@ export interface SalaryRecord extends NewSalaryRecord {
   supersededAt: Date | null;
   supersededById: string | null;
 }
+
+/** Live = not superseded by a correction (docs/data-model.md I1). */
+export function isLive(record: SalaryRecord): boolean {
+  return record.supersededAt === null;
+}
+
+/**
+ * Whether `record`'s period covers `date` (ISO `YYYY-MM-DD`), both ends
+ * inclusive. A null effectiveTo means the period is still open.
+ */
+export function covers(record: SalaryRecord, date: string): boolean {
+  return (
+    record.effectiveFrom <= date &&
+    (record.effectiveTo === null || date <= record.effectiveTo)
+  );
+}

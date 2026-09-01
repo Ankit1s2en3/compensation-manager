@@ -2,6 +2,7 @@ import { Money } from '../money/Money.js';
 import type { Clock } from '../shared/Clock.js';
 import { DomainError } from '../shared/DomainError.js';
 import type { ChangeReason } from './ChangeReason.js';
+import { covers, isLive } from './SalaryRecord.js';
 import type { NewSalaryRecord, SalaryRecord } from './SalaryRecord.js';
 
 export interface SalaryChangeInput {
@@ -62,14 +63,7 @@ export class SalaryTimeline {
 
   /** The record in force on `date` (ISO `YYYY-MM-DD`), or null if none covers it. */
   currentAt(date: string): SalaryRecord | null {
-    return (
-      this.#records.find(
-        (r) =>
-          r.supersededAt === null &&
-          r.effectiveFrom <= date &&
-          (r.effectiveTo === null || date <= r.effectiveTo),
-      ) ?? null
-    );
+    return this.#records.find((r) => isLive(r) && covers(r, date)) ?? null;
   }
 
   recordChange(input: SalaryChangeInput): TimelineWrites {
@@ -136,19 +130,18 @@ export class SalaryTimeline {
   }
 
   #latestLiveRecord(): SalaryRecord | null {
-    const live = this.#records.filter((r) => r.supersededAt === null);
-    return live.reduce<SalaryRecord | null>(
-      (latest, r) =>
-        latest === null || r.effectiveFrom > latest.effectiveFrom ? r : latest,
-      null,
-    );
+    return this.#records
+      .filter(isLive)
+      .reduce<SalaryRecord | null>(
+        (latest, r) =>
+          latest === null || r.effectiveFrom > latest.effectiveFrom ? r : latest,
+        null,
+      );
   }
 
   #openLivePeriod(): SalaryRecord | null {
     return (
-      this.#records.find(
-        (r) => r.supersededAt === null && r.effectiveTo === null,
-      ) ?? null
+      this.#records.find((r) => isLive(r) && r.effectiveTo === null) ?? null
     );
   }
 }
