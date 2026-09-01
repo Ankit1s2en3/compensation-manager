@@ -204,7 +204,7 @@ I1  No two LIVE records for the same employee may overlap in date.
     (live = superseded_at IS NULL)
 I2  At most one LIVE record per employee may have effective_to = NULL.
 I3  effective_from >= the employee's hire_date.
-I4  amount_minor > 0 and is a whole number.
+I4  amount_minor is a whole number of minor units. Enforced by Money.of.
 I5  A record may be superseded at most once.
 I6  A correction copies effective_from, effective_to AND change_reason from the
     record it replaces. Only the amount and the note differ.
@@ -215,6 +215,9 @@ I8  A new salary change must start strictly AFTER the latest live record's
 I9  The corrected amount must be in the same currency as the record it
     replaces. I6 says only the amount and the note differ; I9 makes precise
     that "amount" means the number, not the currency.
+I10 amount_minor > 0. A salary is a positive amount. Enforced by
+    SalaryTimeline, not Money — a Money may be zero or negative (minus() can
+    cross zero); a salary may not.
 ```
 
 > **Why I8 exists.** "Close the currently-open period at `newFrom − 1`" is only correct when
@@ -435,8 +438,8 @@ class SalaryTimeline {
 
   currentAt(date: string): SalaryRecord | null;           // the live record covering `date`
 
-  recordChange(input: SalaryChangeInput): TimelineWrites; // throws on I3, I8, I4
-  correct(recordId: string, amount: Money, note: string, clock: Clock): TimelineWrites; // throws on I5
+  recordChange(input: SalaryChangeInput): TimelineWrites; // throws on I3, I4, I8, I10
+  correct(recordId: string, amount: Money, note: string, clock: Clock): TimelineWrites; // throws on I5, I9, I10
 }
 ```
 
