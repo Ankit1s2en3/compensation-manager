@@ -48,6 +48,7 @@ export class SalaryTimeline {
     return (
       this.#records.find(
         (r) =>
+          r.supersededAt === null &&
           r.effectiveFrom <= date &&
           (r.effectiveTo === null || date <= r.effectiveTo),
       ) ?? null

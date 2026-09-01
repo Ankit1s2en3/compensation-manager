@@ -142,4 +142,28 @@ describe('SalaryTimeline.currentAt', () => {
     expect(timeline.currentAt('2024-06-15')?.id).toBe('r1');
     expect(timeline.currentAt('2026-09-01')?.id).toBe('r2');
   });
+
+  it('ignores superseded records when more than one period covers the date', () => {
+    const timeline = new SalaryTimeline({
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({
+          id: 'r2',
+          effectiveFrom: '2026-04-01',
+          effectiveTo: null,
+          changeReason: 'MERIT',
+          supersededAt: new Date('2026-08-29T00:00:00Z'),
+          supersededById: 'r3',
+        }),
+        makeRecord({
+          id: 'r3',
+          effectiveFrom: '2026-04-01',
+          effectiveTo: null,
+          changeReason: 'MERIT',
+        }),
+      ],
+    });
+
+    expect(timeline.currentAt('2026-09-01')?.id).toBe('r3');
+  });
 });
