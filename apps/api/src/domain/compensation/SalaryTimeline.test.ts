@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
+import { Money } from '../money/Money.js';
 import type { Clock } from '../shared/Clock.js';
 import type { SalaryRecord } from './SalaryRecord.js';
 import {
@@ -14,8 +15,7 @@ const clockAt = (iso: string): Clock => ({ now: () => new Date(iso) });
 function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
   return {
     id: 'r1',
-    amountMinor: 1_500_000,
-    currency: 'INR',
+    amount: Money.of(1_500_000, 'INR'),
     effectiveFrom: '2023-01-01',
     effectiveTo: null,
     changeReason: 'HIRE',
@@ -40,12 +40,26 @@ describe('SalaryTimeline.recordChange', () => {
 
     expect(updated.records).toHaveLength(1);
     expect(updated.records[0]).toMatchObject({
-      amountMinor: 1_500_000,
-      currency: 'INR',
+      amount: Money.of(1_500_000, 'INR'),
       effectiveFrom: '2023-01-01',
       effectiveTo: null,
       changeReason: 'HIRE',
     });
+  });
+
+  it('rejects a change whose amount is not a whole number of minor units', () => {
+    const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
+
+    const change = () =>
+      timeline.recordChange({
+        amountMinor: 1234.5,
+        currency: 'INR',
+        effectiveFrom: '2023-01-01',
+        changeReason: 'HIRE',
+        note: null,
+      });
+
+    expect(change).toThrow(/whole number/i);
   });
 
   it('accepts a change dated after the latest live record', () => {
@@ -179,8 +193,7 @@ describe('SalaryTimeline.correct', () => {
       records: [
         makeRecord({
           id: 'r2',
-          amountMinor: 2_000_000,
-          currency: 'INR',
+          amount: Money.of(2_000_000, 'INR'),
           effectiveFrom: '2026-04-01',
           effectiveTo: null,
           changeReason: 'PROMOTION',
@@ -191,13 +204,13 @@ describe('SalaryTimeline.correct', () => {
 
     const corrected = timeline.correct(
       'r2',
-      { amountMinor: 2_200_000, note: 'Corrects #r2: contract says 22L' },
+      Money.of(2_200_000, 'INR'),
+      'Corrects #r2: contract says 22L',
       clockAt('2026-08-29T00:00:00Z'),
     );
 
     expect(corrected.records.find((r) => r.id === null)).toMatchObject({
-      amountMinor: 2_200_000,
-      currency: 'INR',
+      amount: Money.of(2_200_000, 'INR'),
       effectiveFrom: '2026-04-01', // copied
       effectiveTo: null, // copied
       changeReason: 'PROMOTION', // copied — never 'CORRECTION'
@@ -225,7 +238,8 @@ describe('SalaryTimeline.correct', () => {
     expect(() =>
       timeline.correct(
         'r2',
-        { amountMinor: 2_500_000, note: 'a second correction' },
+        Money.of(2_500_000, 'INR'),
+        'a second correction',
         clockAt('2026-09-01T00:00:00Z'),
       ),
     ).toThrow(AlreadyCorrectedError);

@@ -1,3 +1,4 @@
+import { Money } from '../money/Money.js';
 import type { Clock } from '../shared/Clock.js';
 import { DomainError } from '../shared/DomainError.js';
 import type { ChangeReason } from './ChangeReason.js';
@@ -9,12 +10,6 @@ export interface SalaryChangeInput {
   effectiveFrom: string;
   changeReason: ChangeReason;
   note: string | null;
-}
-
-/** A correction changes only the amount and the note (docs/data-model.md §6). */
-export interface CorrectionInput {
-  amountMinor: number;
-  note: string;
 }
 
 /** I3: effective_from must be on or after the employee's hire date. */
@@ -90,8 +85,7 @@ export class SalaryTimeline {
 
     const record: SalaryRecord = {
       id: null,
-      amountMinor: input.amountMinor,
-      currency: input.currency,
+      amount: Money.of(input.amountMinor, input.currency),
       effectiveFrom: input.effectiveFrom,
       effectiveTo: null,
       changeReason: input.changeReason,
@@ -111,7 +105,8 @@ export class SalaryTimeline {
    */
   correct(
     recordId: string,
-    input: CorrectionInput,
+    amount: Money,
+    note: string,
     clock: Clock,
   ): SalaryTimeline {
     const target = this.#records.find((r) => r.id === recordId);
@@ -124,12 +119,11 @@ export class SalaryTimeline {
 
     const replacement: SalaryRecord = {
       id: null,
-      amountMinor: input.amountMinor,
-      currency: target.currency,
+      amount,
       effectiveFrom: target.effectiveFrom,
       effectiveTo: target.effectiveTo,
       changeReason: target.changeReason,
-      note: input.note,
+      note,
       supersededAt: null,
       supersededById: null,
     };
