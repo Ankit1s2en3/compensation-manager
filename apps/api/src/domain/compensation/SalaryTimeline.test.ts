@@ -10,7 +10,10 @@ import {
   SalaryTimeline,
 } from './SalaryTimeline.js';
 
-const clockAt = (iso: string): Clock => ({ now: () => new Date(iso) });
+const clockAt = (iso: string): Clock => ({
+  now: () => new Date(iso),
+  today: () => iso.slice(0, 10),
+});
 
 function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
   return {
