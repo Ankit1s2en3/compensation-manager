@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 
+import type { Clock } from '../shared/Clock.js';
 import type { SalaryRecord } from './SalaryRecord.js';
 import {
   EffectiveDateBeforeHireError,
   RetroactiveChangeError,
   SalaryTimeline,
 } from './SalaryTimeline.js';
+
+const clockAt = (iso: string): Clock => ({ now: () => new Date(iso) });
 
 function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
   return {
@@ -165,5 +168,42 @@ describe('SalaryTimeline.currentAt', () => {
     });
 
     expect(timeline.currentAt('2026-09-01')?.id).toBe('r3');
+  });
+});
+
+describe('SalaryTimeline.correct', () => {
+  it('copies the original effective dates and change_reason onto the replacement', () => {
+    const timeline = new SalaryTimeline({
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({
+          id: 'r2',
+          amountMinor: 2_000_000,
+          currency: 'INR',
+          effectiveFrom: '2026-04-01',
+          effectiveTo: null,
+          changeReason: 'PROMOTION',
+          note: null,
+        }),
+      ],
+    });
+
+    const corrected = timeline.correct(
+      'r2',
+      { amountMinor: 2_200_000, note: 'Corrects #r2: contract says 22L' },
+      clockAt('2026-08-29T00:00:00Z'),
+    );
+
+    expect(corrected.records.find((r) => r.id === null)).toMatchObject({
+      amountMinor: 2_200_000,
+      currency: 'INR',
+      effectiveFrom: '2026-04-01', // copied
+      effectiveTo: null, // copied
+      changeReason: 'PROMOTION', // copied — never 'CORRECTION'
+      note: 'Corrects #r2: contract says 22L',
+    });
+    expect(corrected.records.find((r) => r.id === 'r2')?.supersededAt).toEqual(
+      new Date('2026-08-29T00:00:00Z'),
+    );
   });
 });

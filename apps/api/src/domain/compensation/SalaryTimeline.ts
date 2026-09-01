@@ -1,3 +1,4 @@
+import type { Clock } from '../shared/Clock.js';
 import { DomainError } from '../shared/DomainError.js';
 import type { ChangeReason } from './ChangeReason.js';
 import type { SalaryRecord } from './SalaryRecord.js';
@@ -8,6 +9,12 @@ export interface SalaryChangeInput {
   effectiveFrom: string;
   changeReason: ChangeReason;
   note: string | null;
+}
+
+/** A correction changes only the amount and the note (docs/data-model.md §6). */
+export interface CorrectionInput {
+  amountMinor: number;
+  note: string;
 }
 
 /** I3: effective_from must be on or after the employee's hire date. */
@@ -88,6 +95,43 @@ export class SalaryTimeline {
     return new SalaryTimeline({
       hireDate: this.#hireDate,
       records: [...closed, record],
+    });
+  }
+
+  /**
+   * Supersede `recordId` with a copy that keeps its dating and reason but takes
+   * a new amount and note. Two writes: mark the original, insert the replacement.
+   */
+  correct(
+    recordId: string,
+    input: CorrectionInput,
+    clock: Clock,
+  ): SalaryTimeline {
+    const target = this.#records.find((r) => r.id === recordId);
+    if (target === undefined) {
+      throw new DomainError(`no salary record with id ${recordId}`);
+    }
+
+    const replacement: SalaryRecord = {
+      id: null,
+      amountMinor: input.amountMinor,
+      currency: target.currency,
+      effectiveFrom: target.effectiveFrom,
+      effectiveTo: target.effectiveTo,
+      changeReason: target.changeReason,
+      note: input.note,
+      supersededAt: null,
+      supersededById: null,
+    };
+
+    const records = this.#records.map((r) =>
+      // supersededById is filled with the replacement's real id when persisted.
+      r.id === recordId ? { ...r, supersededAt: clock.now() } : r,
+    );
+
+    return new SalaryTimeline({
+      hireDate: this.#hireDate,
+      records: [...records, replacement],
     });
   }
 
