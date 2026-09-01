@@ -10,6 +10,7 @@ import {
   NonPositiveSalaryError,
   RetroactiveChangeError,
 } from './errors.js';
+import { inr, jpy } from './money.fixtures.js';
 import { SalaryTimeline } from './SalaryTimeline.js';
 
 const clockAt = (iso: string): Clock => ({
@@ -20,7 +21,8 @@ const clockAt = (iso: string): Clock => ({
 function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
   return {
     id: 'r1',
-    amount: Money.of(1_500_000, 'INR'),
+    amount: inr(1_500_000), // Rs 15,00,000
+
     effectiveFrom: '2023-01-01',
     effectiveTo: null,
     changeReason: 'HIRE',
@@ -36,7 +38,7 @@ describe('SalaryTimeline.recordChange', () => {
     const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
 
     const writes = timeline.recordChange({
-      amountMinor: 1_500_000,
+      amountMinor: inr(1_500_000).amountMinor,
       currency: 'INR',
       effectiveFrom: '2023-01-01',
       changeReason: 'HIRE',
@@ -46,12 +48,27 @@ describe('SalaryTimeline.recordChange', () => {
     expect(writes.closePeriod).toBeUndefined();
     expect(writes.insert).toEqual({
       employeeId: 'e1',
-      amount: Money.of(1_500_000, 'INR'),
+      amount: inr(1_500_000),
       effectiveFrom: '2023-01-01',
       effectiveTo: null,
       changeReason: 'HIRE',
       note: null,
     });
+  });
+
+  it('accepts a JPY salary — a zero-exponent currency', () => {
+    const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
+
+    const writes = timeline.recordChange({
+      amountMinor: jpy(9_000_000).amountMinor,
+      currency: 'JPY',
+      effectiveFrom: '2023-01-01',
+      changeReason: 'HIRE',
+      note: null,
+    });
+
+    expect(writes.insert.amount).toEqual(jpy(9_000_000));
+    expect(writes.insert.amount.amountMinor).toBe(9_000_000); // no * 100 for JPY
   });
 
   it('rejects a change whose amount is not a whole number of minor units', () => {
@@ -93,7 +110,7 @@ describe('SalaryTimeline.recordChange', () => {
     });
 
     const writes = timeline.recordChange({
-      amountMinor: 2_000_000,
+      amountMinor: inr(2_000_000).amountMinor,
       currency: 'INR',
       effectiveFrom: '2026-04-01',
       changeReason: 'MERIT',
@@ -114,7 +131,7 @@ describe('SalaryTimeline.recordChange', () => {
 
     const change = (effectiveFrom: string) => () =>
       timeline.recordChange({
-        amountMinor: 2_200_000,
+        amountMinor: inr(2_200_000).amountMinor,
         currency: 'INR',
         effectiveFrom,
         changeReason: 'MERIT',
@@ -130,7 +147,7 @@ describe('SalaryTimeline.recordChange', () => {
 
     const change = () =>
       timeline.recordChange({
-        amountMinor: 1_500_000,
+        amountMinor: inr(1_500_000).amountMinor,
         currency: 'INR',
         effectiveFrom: '2022-12-01',
         changeReason: 'HIRE',
@@ -150,7 +167,7 @@ describe('SalaryTimeline.recordChange', () => {
     });
 
     const writes = timeline.recordChange({
-      amountMinor: 2_000_000,
+      amountMinor: inr(2_000_000).amountMinor,
       currency: 'INR',
       effectiveFrom: '2026-04-01',
       changeReason: 'MERIT',
@@ -222,7 +239,7 @@ describe('SalaryTimeline.correct', () => {
       records: [
         makeRecord({
           id: 'r2',
-          amount: Money.of(2_000_000, 'INR'),
+          amount: inr(2_000_000),
           effectiveFrom: '2026-04-01',
           effectiveTo: null,
           changeReason: 'PROMOTION',
@@ -233,14 +250,14 @@ describe('SalaryTimeline.correct', () => {
 
     const writes = timeline.correct(
       'r2',
-      Money.of(2_200_000, 'INR'),
+      inr(2_200_000),
       'Corrects #r2: contract says 22L',
       clockAt('2026-08-29T00:00:00Z'),
     );
 
     expect(writes.insert).toEqual({
       employeeId: 'e1',
-      amount: Money.of(2_200_000, 'INR'),
+      amount: inr(2_200_000),
       effectiveFrom: '2026-04-01', // copied
       effectiveTo: null, // copied
       changeReason: 'PROMOTION', // copied — never 'CORRECTION'
@@ -270,7 +287,7 @@ describe('SalaryTimeline.correct', () => {
     expect(() =>
       timeline.correct(
         'r2',
-        Money.of(2_500_000, 'INR'),
+        inr(2_500_000),
         'a second correction',
         clockAt('2026-09-01T00:00:00Z'),
       ),
@@ -284,7 +301,7 @@ describe('SalaryTimeline.correct', () => {
       records: [
         makeRecord({
           id: 'r2',
-          amount: Money.of(2_000_000, 'INR'),
+          amount: inr(2_000_000),
           effectiveFrom: '2026-04-01',
           changeReason: 'MERIT',
         }),
@@ -294,7 +311,7 @@ describe('SalaryTimeline.correct', () => {
     expect(() =>
       timeline.correct(
         'r2',
-        Money.of(24_000, 'USD'),
+        Money.of(18_000_000, 'USD'), // $180,000 — currency, not amount, is the mistake
         'entered against the wrong record',
         clockAt('2026-09-01T00:00:00Z'),
       ),
