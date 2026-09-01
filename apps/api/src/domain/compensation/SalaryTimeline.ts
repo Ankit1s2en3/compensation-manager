@@ -53,10 +53,16 @@ export class RetroactiveChangeError extends DomainError {
  * change operations return a TimelineWrites description for the caller to apply.
  */
 export class SalaryTimeline {
+  readonly #employeeId: string;
   readonly #hireDate: string;
   readonly #records: readonly SalaryRecord[];
 
-  constructor(params: { hireDate: string; records: readonly SalaryRecord[] }) {
+  constructor(params: {
+    employeeId: string;
+    hireDate: string;
+    records: readonly SalaryRecord[];
+  }) {
+    this.#employeeId = params.employeeId;
     this.#hireDate = params.hireDate;
     this.#records = params.records;
   }
@@ -80,6 +86,7 @@ export class SalaryTimeline {
     }
 
     const insert: NewSalaryRecord = {
+      employeeId: this.#employeeId,
       amount: Money.of(input.amountMinor, input.currency),
       effectiveFrom: input.effectiveFrom,
       effectiveTo: null,
@@ -120,6 +127,7 @@ export class SalaryTimeline {
     return {
       supersede: { recordId, at: clock.now() },
       insert: {
+        employeeId: this.#employeeId,
         amount,
         effectiveFrom: target.effectiveFrom,
         effectiveTo: target.effectiveTo,

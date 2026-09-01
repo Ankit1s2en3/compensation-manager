@@ -387,7 +387,7 @@ record carries no behaviour the timeline can't express, so keeping it a data sha
 repository rows map to it directly.
 
 ```ts
-interface NewSalaryRecord {          // produced by the domain, not yet persisted
+interface SalaryFacts {              // the immutable facts, shared by both shapes below
   amount: Money;                     // integer minor units + currency, never a bare number
   effectiveFrom: string;             // ISO YYYY-MM-DD
   effectiveTo: string | null;        // null = open
@@ -395,7 +395,11 @@ interface NewSalaryRecord {          // produced by the domain, not yet persiste
   note: string | null;
 }
 
-interface SalaryRecord extends NewSalaryRecord {
+interface NewSalaryRecord extends SalaryFacts {  // produced by the domain, not yet persisted
+  employeeId: string;                            // so the repository can INSERT with nothing extra
+}
+
+interface SalaryRecord extends SalaryFacts {     // a persisted row
   id: string;
   supersededAt: Date | null;         // null = live
   supersededById: string | null;
@@ -405,9 +409,12 @@ function isLive(r: SalaryRecord): boolean;               // supersededAt === nul
 function covers(r: SalaryRecord, date: string): boolean; // effectiveFrom <= date <= (effectiveTo ?? ∞)
 ```
 
-`NewSalaryRecord` has no `id` and no `superseded*`: the database assigns the id, and a fresh
-insert is always live. The application layer sets the original's `supersededById` once the
-replacement insert returns.
+`NewSalaryRecord` carries `employeeId` but no `id` and no `superseded*`: it is a standalone
+write instruction, so the repository needs nothing beyond it to run the INSERT; the database
+assigns the id, and a fresh insert is always live. `SalaryRecord` **omits `employeeId`
+deliberately** — a persisted record is only ever reached through a `SalaryTimeline`, which is
+built for one employee, so the id on every row would be redundant. The application layer sets
+the original's `supersededById` once the replacement insert returns.
 
 ### `SalaryTimeline`
 
@@ -416,7 +423,7 @@ anywhere beneath it.**
 
 ```ts
 class SalaryTimeline {
-  constructor(params: { hireDate: string; records: readonly SalaryRecord[] });
+  constructor(params: { employeeId: string; hireDate: string; records: readonly SalaryRecord[] });
 
   currentAt(date: string): SalaryRecord | null;           // the live record covering `date`
 

@@ -31,7 +31,7 @@ function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
 
 describe('SalaryTimeline.recordChange', () => {
   it('accepts the first change for an employee', () => {
-    const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
+    const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
 
     const writes = timeline.recordChange({
       amountMinor: 1_500_000,
@@ -43,6 +43,7 @@ describe('SalaryTimeline.recordChange', () => {
 
     expect(writes.closePeriod).toBeUndefined();
     expect(writes.insert).toEqual({
+      employeeId: 'e1',
       amount: Money.of(1_500_000, 'INR'),
       effectiveFrom: '2023-01-01',
       effectiveTo: null,
@@ -52,7 +53,7 @@ describe('SalaryTimeline.recordChange', () => {
   });
 
   it('rejects a change whose amount is not a whole number of minor units', () => {
-    const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
+    const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
 
     const change = () =>
       timeline.recordChange({
@@ -68,6 +69,7 @@ describe('SalaryTimeline.recordChange', () => {
 
   it('accepts a change dated after the latest live record', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [makeRecord({ id: 'r1', effectiveFrom: '2023-01-01' })],
     });
@@ -87,6 +89,7 @@ describe('SalaryTimeline.recordChange', () => {
 
   it('rejects a change dated on or before the latest live record', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [makeRecord({ id: 'r1', effectiveFrom: '2026-04-01' })],
     });
@@ -105,7 +108,7 @@ describe('SalaryTimeline.recordChange', () => {
   });
 
   it('rejects a change dated before the employee hire date', () => {
-    const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
+    const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
 
     const change = () =>
       timeline.recordChange({
@@ -121,6 +124,7 @@ describe('SalaryTimeline.recordChange', () => {
 
   it('closes the previous open period at the day before the new effective date', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [
         makeRecord({ id: 'r1', effectiveFrom: '2023-01-01', effectiveTo: null }),
@@ -145,6 +149,7 @@ describe('SalaryTimeline.recordChange', () => {
 describe('SalaryTimeline.currentAt', () => {
   it('returns the record whose period covers the given date', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [
         makeRecord({
@@ -167,6 +172,7 @@ describe('SalaryTimeline.currentAt', () => {
 
   it('ignores superseded records when more than one period covers the date', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [
         makeRecord({
@@ -193,6 +199,7 @@ describe('SalaryTimeline.currentAt', () => {
 describe('SalaryTimeline.correct', () => {
   it('copies the original effective dates and change_reason onto the replacement', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [
         makeRecord({
@@ -214,6 +221,7 @@ describe('SalaryTimeline.correct', () => {
     );
 
     expect(writes.insert).toEqual({
+      employeeId: 'e1',
       amount: Money.of(2_200_000, 'INR'),
       effectiveFrom: '2026-04-01', // copied
       effectiveTo: null, // copied
@@ -228,6 +236,7 @@ describe('SalaryTimeline.correct', () => {
 
   it('rejects correcting a record that has already been superseded', () => {
     const timeline = new SalaryTimeline({
+      employeeId: 'e1',
       hireDate: '2023-01-01',
       records: [
         makeRecord({
