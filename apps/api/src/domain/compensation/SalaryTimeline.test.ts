@@ -119,3 +119,27 @@ describe('SalaryTimeline.recordChange', () => {
     expect(previous?.effectiveTo).toBe('2026-03-31');
   });
 });
+
+describe('SalaryTimeline.currentAt', () => {
+  it('returns the record whose period covers the given date', () => {
+    const timeline = new SalaryTimeline({
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({
+          id: 'r1',
+          effectiveFrom: '2023-01-01',
+          effectiveTo: '2026-03-31',
+        }),
+        makeRecord({
+          id: 'r2',
+          effectiveFrom: '2026-04-01',
+          effectiveTo: null,
+          changeReason: 'MERIT',
+        }),
+      ],
+    });
+
+    expect(timeline.currentAt('2024-06-15')?.id).toBe('r1');
+    expect(timeline.currentAt('2026-09-01')?.id).toBe('r2');
+  });
+});
