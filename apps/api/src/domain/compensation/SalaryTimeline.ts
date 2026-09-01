@@ -24,6 +24,13 @@ export class EffectiveDateBeforeHireError extends DomainError {
   }
 }
 
+/** I5: a record may be superseded at most once. */
+export class AlreadyCorrectedError extends DomainError {
+  constructor(recordId: string) {
+    super(`salary record ${recordId} has already been corrected`);
+  }
+}
+
 /** I8: a change must start strictly after the latest live record's effective_from. */
 export class RetroactiveChangeError extends DomainError {
   constructor(attempted: string, latestLive: string) {
@@ -110,6 +117,9 @@ export class SalaryTimeline {
     const target = this.#records.find((r) => r.id === recordId);
     if (target === undefined) {
       throw new DomainError(`no salary record with id ${recordId}`);
+    }
+    if (target.supersededAt !== null) {
+      throw new AlreadyCorrectedError(recordId);
     }
 
     const replacement: SalaryRecord = {

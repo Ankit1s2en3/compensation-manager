@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import type { Clock } from '../shared/Clock.js';
 import type { SalaryRecord } from './SalaryRecord.js';
 import {
+  AlreadyCorrectedError,
   EffectiveDateBeforeHireError,
   RetroactiveChangeError,
   SalaryTimeline,
@@ -205,5 +206,28 @@ describe('SalaryTimeline.correct', () => {
     expect(corrected.records.find((r) => r.id === 'r2')?.supersededAt).toEqual(
       new Date('2026-08-29T00:00:00Z'),
     );
+  });
+
+  it('rejects correcting a record that has already been superseded', () => {
+    const timeline = new SalaryTimeline({
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({
+          id: 'r2',
+          changeReason: 'MERIT',
+          supersededAt: new Date('2026-08-01T00:00:00Z'),
+          supersededById: 'r3',
+        }),
+        makeRecord({ id: 'r3', changeReason: 'MERIT' }),
+      ],
+    });
+
+    expect(() =>
+      timeline.correct(
+        'r2',
+        { amountMinor: 2_500_000, note: 'a second correction' },
+        clockAt('2026-09-01T00:00:00Z'),
+      ),
+    ).toThrow(AlreadyCorrectedError);
   });
 });
