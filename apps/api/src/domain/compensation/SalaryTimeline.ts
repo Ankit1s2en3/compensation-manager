@@ -2,7 +2,7 @@ import { Money } from '../money/Money.js';
 import type { Clock } from '../shared/Clock.js';
 import { DomainError } from '../shared/DomainError.js';
 import type { ChangeReason } from './ChangeReason.js';
-import type { SalaryRecord } from './SalaryRecord.js';
+import type { NewSalaryRecord, SalaryRecord } from './SalaryRecord.js';
 
 export interface SalaryChangeInput {
   amountMinor: number;
@@ -10,6 +10,17 @@ export interface SalaryChangeInput {
   effectiveFrom: string;
   changeReason: ChangeReason;
   note: string | null;
+}
+
+/**
+ * What a change requires to be written, as a description the application layer
+ * executes in one transaction (I7). The domain decides what; the app decides how,
+ * and fills supersede's replacement id once the insert returns.
+ */
+export interface TimelineWrites {
+  closePeriod?: { recordId: string; effectiveTo: string };
+  supersede?: { recordId: string; at: Date };
+  insert: NewSalaryRecord;
 }
 
 /** I3: effective_from must be on or after the employee's hire date. */
@@ -37,7 +48,8 @@ export class RetroactiveChangeError extends DomainError {
 
 /**
  * An employee's salary history and the rules for changing it
- * (docs/data-model.md §5). Immutable — every operation returns a new timeline.
+ * (docs/data-model.md §5). Pure — it reads its records and never writes them;
+ * change operations return a TimelineWrites description for the caller to apply.
  */
 export class SalaryTimeline {
   readonly #hireDate: string;
@@ -46,10 +58,6 @@ export class SalaryTimeline {
   constructor(params: { hireDate: string; records: readonly SalaryRecord[] }) {
     this.#hireDate = params.hireDate;
     this.#records = params.records;
-  }
-
-  get records(): readonly SalaryRecord[] {
-    return this.#records;
   }
 
   /** The record in force on `date` (ISO `YYYY-MM-DD`), or null if none covers it. */
@@ -64,7 +72,7 @@ export class SalaryTimeline {
     );
   }
 
-  recordChange(input: SalaryChangeInput): SalaryTimeline {
+  recordChange(input: SalaryChangeInput): TimelineWrites {
     if (input.effectiveFrom < this.#hireDate) {
       throw new EffectiveDateBeforeHireError(input.effectiveFrom, this.#hireDate);
     }
@@ -77,26 +85,24 @@ export class SalaryTimeline {
       );
     }
 
-    const closed = this.#records.map((r) =>
-      r.effectiveTo === null && r.supersededAt === null
-        ? { ...r, effectiveTo: previousDay(input.effectiveFrom) }
-        : r,
-    );
-
-    const record: SalaryRecord = {
-      id: null,
+    const insert: NewSalaryRecord = {
       amount: Money.of(input.amountMinor, input.currency),
       effectiveFrom: input.effectiveFrom,
       effectiveTo: null,
       changeReason: input.changeReason,
       note: input.note,
-      supersededAt: null,
-      supersededById: null,
     };
-    return new SalaryTimeline({
-      hireDate: this.#hireDate,
-      records: [...closed, record],
-    });
+
+    const open = this.#openLivePeriod();
+    return open === null
+      ? { insert }
+      : {
+          closePeriod: {
+            recordId: open.id,
+            effectiveTo: previousDay(input.effectiveFrom),
+          },
+          insert,
+        };
   }
 
   /**
@@ -108,7 +114,7 @@ export class SalaryTimeline {
     amount: Money,
     note: string,
     clock: Clock,
-  ): SalaryTimeline {
+  ): TimelineWrites {
     const target = this.#records.find((r) => r.id === recordId);
     if (target === undefined) {
       throw new DomainError(`no salary record with id ${recordId}`);
@@ -117,26 +123,16 @@ export class SalaryTimeline {
       throw new AlreadyCorrectedError(recordId);
     }
 
-    const replacement: SalaryRecord = {
-      id: null,
-      amount,
-      effectiveFrom: target.effectiveFrom,
-      effectiveTo: target.effectiveTo,
-      changeReason: target.changeReason,
-      note,
-      supersededAt: null,
-      supersededById: null,
+    return {
+      supersede: { recordId, at: clock.now() },
+      insert: {
+        amount,
+        effectiveFrom: target.effectiveFrom,
+        effectiveTo: target.effectiveTo,
+        changeReason: target.changeReason,
+        note,
+      },
     };
-
-    const records = this.#records.map((r) =>
-      // supersededById is filled with the replacement's real id when persisted.
-      r.id === recordId ? { ...r, supersededAt: clock.now() } : r,
-    );
-
-    return new SalaryTimeline({
-      hireDate: this.#hireDate,
-      records: [...records, replacement],
-    });
   }
 
   #latestLiveRecord(): SalaryRecord | null {
@@ -145,6 +141,14 @@ export class SalaryTimeline {
       (latest, r) =>
         latest === null || r.effectiveFrom > latest.effectiveFrom ? r : latest,
       null,
+    );
+  }
+
+  #openLivePeriod(): SalaryRecord | null {
+    return (
+      this.#records.find(
+        (r) => r.supersededAt === null && r.effectiveTo === null,
+      ) ?? null
     );
   }
 }

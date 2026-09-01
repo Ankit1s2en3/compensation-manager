@@ -30,7 +30,7 @@ describe('SalaryTimeline.recordChange', () => {
   it('accepts the first change for an employee', () => {
     const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
 
-    const updated = timeline.recordChange({
+    const writes = timeline.recordChange({
       amountMinor: 1_500_000,
       currency: 'INR',
       effectiveFrom: '2023-01-01',
@@ -38,12 +38,13 @@ describe('SalaryTimeline.recordChange', () => {
       note: null,
     });
 
-    expect(updated.records).toHaveLength(1);
-    expect(updated.records[0]).toMatchObject({
+    expect(writes.closePeriod).toBeUndefined();
+    expect(writes.insert).toEqual({
       amount: Money.of(1_500_000, 'INR'),
       effectiveFrom: '2023-01-01',
       effectiveTo: null,
       changeReason: 'HIRE',
+      note: null,
     });
   });
 
@@ -68,7 +69,7 @@ describe('SalaryTimeline.recordChange', () => {
       records: [makeRecord({ id: 'r1', effectiveFrom: '2023-01-01' })],
     });
 
-    const updated = timeline.recordChange({
+    const writes = timeline.recordChange({
       amountMinor: 2_000_000,
       currency: 'INR',
       effectiveFrom: '2026-04-01',
@@ -76,11 +77,9 @@ describe('SalaryTimeline.recordChange', () => {
       note: null,
     });
 
-    expect(updated.records).toHaveLength(2);
-    expect(updated.records.map((r) => r.effectiveFrom)).toEqual([
-      '2023-01-01',
-      '2026-04-01',
-    ]);
+    // the prior record is closed, not dropped; the new one is inserted
+    expect(writes.closePeriod?.recordId).toBe('r1');
+    expect(writes.insert.effectiveFrom).toBe('2026-04-01');
   });
 
   it('rejects a change dated on or before the latest live record', () => {
@@ -125,7 +124,7 @@ describe('SalaryTimeline.recordChange', () => {
       ],
     });
 
-    const updated = timeline.recordChange({
+    const writes = timeline.recordChange({
       amountMinor: 2_000_000,
       currency: 'INR',
       effectiveFrom: '2026-04-01',
@@ -133,8 +132,10 @@ describe('SalaryTimeline.recordChange', () => {
       note: null,
     });
 
-    const previous = updated.records.find((r) => r.id === 'r1');
-    expect(previous?.effectiveTo).toBe('2026-03-31');
+    expect(writes.closePeriod).toEqual({
+      recordId: 'r1',
+      effectiveTo: '2026-03-31',
+    });
   });
 });
 
@@ -202,23 +203,24 @@ describe('SalaryTimeline.correct', () => {
       ],
     });
 
-    const corrected = timeline.correct(
+    const writes = timeline.correct(
       'r2',
       Money.of(2_200_000, 'INR'),
       'Corrects #r2: contract says 22L',
       clockAt('2026-08-29T00:00:00Z'),
     );
 
-    expect(corrected.records.find((r) => r.id === null)).toMatchObject({
+    expect(writes.insert).toEqual({
       amount: Money.of(2_200_000, 'INR'),
       effectiveFrom: '2026-04-01', // copied
       effectiveTo: null, // copied
       changeReason: 'PROMOTION', // copied — never 'CORRECTION'
       note: 'Corrects #r2: contract says 22L',
     });
-    expect(corrected.records.find((r) => r.id === 'r2')?.supersededAt).toEqual(
-      new Date('2026-08-29T00:00:00Z'),
-    );
+    expect(writes.supersede).toEqual({
+      recordId: 'r2',
+      at: new Date('2026-08-29T00:00:00Z'),
+    });
   });
 
   it('rejects correcting a record that has already been superseded', () => {
