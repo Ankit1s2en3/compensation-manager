@@ -47,6 +47,15 @@ export class RetroactiveChangeError extends DomainError {
   }
 }
 
+/** I9: a correction may change the amount and the note, and nothing else. */
+export class CorrectionCurrencyMismatchError extends DomainError {
+  constructor(recordId: string, was: string, got: string) {
+    super(
+      `salary record ${recordId} is in ${was}; a correction cannot change its currency to ${got}`,
+    );
+  }
+}
+
 /**
  * An employee's salary history and the rules for changing it
  * (docs/data-model.md §5). Pure — it reads its records and never writes them;
@@ -122,6 +131,13 @@ export class SalaryTimeline {
     }
     if (target.supersededAt !== null) {
       throw new AlreadyCorrectedError(recordId);
+    }
+    if (amount.currency !== target.amount.currency) {
+      throw new CorrectionCurrencyMismatchError(
+        recordId,
+        target.amount.currency,
+        amount.currency,
+      );
     }
 
     return {

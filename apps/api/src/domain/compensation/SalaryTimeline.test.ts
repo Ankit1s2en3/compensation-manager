@@ -5,6 +5,7 @@ import type { Clock } from '../shared/Clock.js';
 import type { SalaryRecord } from './SalaryRecord.js';
 import {
   AlreadyCorrectedError,
+  CorrectionCurrencyMismatchError,
   EffectiveDateBeforeHireError,
   RetroactiveChangeError,
   SalaryTimeline,
@@ -257,5 +258,29 @@ describe('SalaryTimeline.correct', () => {
         clockAt('2026-09-01T00:00:00Z'),
       ),
     ).toThrow(AlreadyCorrectedError);
+  });
+
+  it('correcting a record cannot change its currency', () => {
+    const timeline = new SalaryTimeline({
+      employeeId: 'e1',
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({
+          id: 'r2',
+          amount: Money.of(2_000_000, 'INR'),
+          effectiveFrom: '2026-04-01',
+          changeReason: 'MERIT',
+        }),
+      ],
+    });
+
+    expect(() =>
+      timeline.correct(
+        'r2',
+        Money.of(24_000, 'USD'),
+        'entered against the wrong record',
+        clockAt('2026-09-01T00:00:00Z'),
+      ),
+    ).toThrow(CorrectionCurrencyMismatchError);
   });
 });
