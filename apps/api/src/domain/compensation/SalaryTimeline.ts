@@ -56,6 +56,12 @@ export class SalaryTimeline {
       );
     }
 
+    const closed = this.#records.map((r) =>
+      r.effectiveTo === null && r.supersededAt === null
+        ? { ...r, effectiveTo: previousDay(input.effectiveFrom) }
+        : r,
+    );
+
     const record: SalaryRecord = {
       id: null,
       amountMinor: input.amountMinor,
@@ -69,7 +75,7 @@ export class SalaryTimeline {
     };
     return new SalaryTimeline({
       hireDate: this.#hireDate,
-      records: [...this.#records, record],
+      records: [...closed, record],
     });
   }
 
@@ -81,4 +87,32 @@ export class SalaryTimeline {
       null,
     );
   }
+}
+
+/** The calendar day before an ISO `YYYY-MM-DD` date. Pure — no `Date`. */
+function previousDay(iso: string): string {
+  // Domain dates are well-formed YYYY-MM-DD (validated at the HTTP boundary).
+  const [year, month, day] = iso.split('-').map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  if (day > 1) {
+    return `${year}-${pad2(month)}-${pad2(day - 1)}`;
+  }
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  return `${prevYear}-${pad2(prevMonth)}-${pad2(lastDayOfMonth(prevYear, prevMonth))}`;
+}
+
+function lastDayOfMonth(year: number, month: number): number {
+  if (month === 2) {
+    const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    return leap ? 29 : 28;
+  }
+  return month === 4 || month === 6 || month === 9 || month === 11 ? 30 : 31;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
 }

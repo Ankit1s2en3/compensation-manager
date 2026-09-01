@@ -98,4 +98,24 @@ describe('SalaryTimeline.recordChange', () => {
 
     expect(change).toThrow(EffectiveDateBeforeHireError);
   });
+
+  it('closes the previous open period at the day before the new effective date', () => {
+    const timeline = new SalaryTimeline({
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({ id: 'r1', effectiveFrom: '2023-01-01', effectiveTo: null }),
+      ],
+    });
+
+    const updated = timeline.recordChange({
+      amountMinor: 2_000_000,
+      currency: 'INR',
+      effectiveFrom: '2026-04-01',
+      changeReason: 'MERIT',
+      note: null,
+    });
+
+    const previous = updated.records.find((r) => r.id === 'r1');
+    expect(previous?.effectiveTo).toBe('2026-03-31');
+  });
 });
