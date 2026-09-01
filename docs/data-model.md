@@ -212,6 +212,9 @@ I7  Both writes below are atomic. A half-applied change is unrepairable.
 I8  A new salary change must start strictly AFTER the latest live record's
     effective_from. Retroactive insertion into the middle of the timeline is
     rejected — that is what corrections are for.
+I9  The corrected amount must be in the same currency as the record it
+    replaces. I6 says only the amount and the note differ; I9 makes precise
+    that "amount" means the number, not the currency.
 ```
 
 > **Why I8 exists.** "Close the currently-open period at `newFrom − 1`" is only correct when
@@ -272,6 +275,11 @@ WHERE  id = 2
 
 COMMIT;
 ```
+
+The `SELECT` copies `currency_code` from the original rather than taking a new one — a
+correction cannot move currencies (**I9**). `SalaryTimeline.correct` enforces this before the
+transaction is built: a `Money` whose currency differs from the target's is rejected with
+`CorrectionCurrencyMismatchError`.
 
 Resulting timeline:
 
