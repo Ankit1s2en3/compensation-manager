@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { UnknownCurrencyError } from './Currency.js';
-import { CurrencyMismatchError, Money } from './Money.js';
+import { CurrencyMismatchError, UnknownCurrencyError } from './errors.js';
+import { Money } from './Money.js';
 
 describe('Money.of', () => {
   it('rejects an amount that is not a whole number of minor units', () => {

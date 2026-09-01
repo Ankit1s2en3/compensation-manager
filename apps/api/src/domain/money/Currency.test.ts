@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { exponentOf, UnknownCurrencyError } from './Currency.js';
+import { exponentOf } from './Currency.js';
+import { UnknownCurrencyError } from './errors.js';
 
 describe('Currency exponent table', () => {
   it('returns the minor-unit exponent for each supported currency', () => {

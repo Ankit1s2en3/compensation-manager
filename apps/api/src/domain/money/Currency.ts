@@ -1,3 +1,5 @@
+import { UnknownCurrencyError } from './errors.js';
+
 /**
  * Minor-unit exponent per currency. Table-driven on purpose: the number of minor
  * units in a major unit varies (JPY has none), so `* 100` is never assumed.
@@ -13,13 +15,6 @@ export const CURRENCY_EXPONENTS = {
 } as const;
 
 export type CurrencyCode = keyof typeof CURRENCY_EXPONENTS;
-
-export class UnknownCurrencyError extends Error {
-  constructor(code: string) {
-    super(`Unknown currency code: ${code}`);
-    this.name = 'UnknownCurrencyError';
-  }
-}
 
 export function exponentOf(code: string): number {
   if (!(code in CURRENCY_EXPONENTS)) {

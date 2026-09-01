@@ -8,8 +8,8 @@ import {
   CorrectionCurrencyMismatchError,
   EffectiveDateBeforeHireError,
   RetroactiveChangeError,
-  SalaryTimeline,
-} from './SalaryTimeline.js';
+} from './errors.js';
+import { SalaryTimeline } from './SalaryTimeline.js';
 
 const clockAt = (iso: string): Clock => ({
   now: () => new Date(iso),
