@@ -14,6 +14,20 @@ export class AlreadyCorrectedError extends DomainError {
   }
 }
 
+/**
+ * I10: a salary amount must be greater than zero.
+ *
+ * This guard lives on SalaryTimeline, not on Money. Money models money in
+ * general — it may legitimately be zero or negative (a `minus()` can cross
+ * zero, a balance can be overdrawn). "A salary is a positive amount" is a
+ * compensation rule, so it belongs to the compensation domain.
+ */
+export class NonPositiveSalaryError extends DomainError {
+  constructor(amountMinor: number) {
+    super(`a salary amount must be greater than zero; got ${amountMinor}`);
+  }
+}
+
 /** I8: a change must start strictly after the latest live record's effective_from. */
 export class RetroactiveChangeError extends DomainError {
   constructor(attempted: string, latestLive: string) {

@@ -6,6 +6,7 @@ import {
   AlreadyCorrectedError,
   CorrectionCurrencyMismatchError,
   EffectiveDateBeforeHireError,
+  NonPositiveSalaryError,
   RetroactiveChangeError,
 } from './errors.js';
 import { covers, isLive } from './SalaryRecord.js';
@@ -56,6 +57,9 @@ export class SalaryTimeline {
   }
 
   recordChange(input: SalaryChangeInput): TimelineWrites {
+    if (input.amountMinor <= 0) {
+      throw new NonPositiveSalaryError(input.amountMinor);
+    }
     if (input.effectiveFrom < this.#hireDate) {
       throw new EffectiveDateBeforeHireError(input.effectiveFrom, this.#hireDate);
     }
@@ -105,6 +109,9 @@ export class SalaryTimeline {
     }
     if (target.supersededAt !== null) {
       throw new AlreadyCorrectedError(recordId);
+    }
+    if (amount.amountMinor <= 0) {
+      throw new NonPositiveSalaryError(amount.amountMinor);
     }
     if (amount.currency !== target.amount.currency) {
       throw new CorrectionCurrencyMismatchError(

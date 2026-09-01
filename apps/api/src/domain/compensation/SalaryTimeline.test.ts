@@ -7,6 +7,7 @@ import {
   AlreadyCorrectedError,
   CorrectionCurrencyMismatchError,
   EffectiveDateBeforeHireError,
+  NonPositiveSalaryError,
   RetroactiveChangeError,
 } from './errors.js';
 import { SalaryTimeline } from './SalaryTimeline.js';
@@ -66,6 +67,22 @@ describe('SalaryTimeline.recordChange', () => {
       });
 
     expect(change).toThrow(/whole number/i);
+  });
+
+  it('rejects a zero or negative amount', () => {
+    const timeline = new SalaryTimeline({ employeeId: 'e1', hireDate: '2023-01-01', records: [] });
+
+    const change = (amountMinor: number) => () =>
+      timeline.recordChange({
+        amountMinor,
+        currency: 'INR',
+        effectiveFrom: '2023-01-01',
+        changeReason: 'HIRE',
+        note: null,
+      });
+
+    expect(change(0)).toThrow(NonPositiveSalaryError);
+    expect(change(-1)).toThrow(NonPositiveSalaryError);
   });
 
   it('accepts a change dated after the latest live record', () => {
@@ -282,5 +299,21 @@ describe('SalaryTimeline.correct', () => {
         clockAt('2026-09-01T00:00:00Z'),
       ),
     ).toThrow(CorrectionCurrencyMismatchError);
+  });
+
+  it('a correction cannot set a zero or negative amount', () => {
+    const timeline = new SalaryTimeline({
+      employeeId: 'e1',
+      hireDate: '2023-01-01',
+      records: [
+        makeRecord({ id: 'r2', effectiveFrom: '2026-04-01', changeReason: 'MERIT' }),
+      ],
+    });
+
+    const correctTo = (amount: Money) => () =>
+      timeline.correct('r2', amount, 'zeroed out', clockAt('2026-09-01T00:00:00Z'));
+
+    expect(correctTo(Money.of(0, 'INR'))).toThrow(NonPositiveSalaryError);
+    expect(correctTo(Money.of(-1, 'INR'))).toThrow(NonPositiveSalaryError);
   });
 });
