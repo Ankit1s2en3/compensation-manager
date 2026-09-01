@@ -115,3 +115,8 @@ The submission succeeds if a reviewer can:
   long-term model and is recorded as the rejected alternative in `docs/adr/`.
 - CSV import defines its own template rather than accepting arbitrary spreadsheet layouts.
   Parsing whatever shape HR happens to have is a heuristics problem, not an engineering one.
+- A correction changes the amount and the note only — never the effective dates. Changing a
+  record's `effective_from` or `effective_to` shifts the previous record's end date and can
+  push later records into overlapping or inverted ranges. That is timeline re-sequencing, a
+  larger operation than a correction, and it is out of scope. A genuinely mis-dated record is
+  handled by re-recording the change at the right date once the surrounding periods allow it.
