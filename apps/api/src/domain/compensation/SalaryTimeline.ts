@@ -10,6 +10,13 @@ export interface SalaryChangeInput {
   note: string | null;
 }
 
+/** I3: effective_from must be on or after the employee's hire date. */
+export class EffectiveDateBeforeHireError extends DomainError {
+  constructor(attempted: string, hireDate: string) {
+    super(`effective date ${attempted} is before the hire date ${hireDate}`);
+  }
+}
+
 /** I8: a change must start strictly after the latest live record's effective_from. */
 export class RetroactiveChangeError extends DomainError {
   constructor(attempted: string, latestLive: string) {
@@ -37,6 +44,10 @@ export class SalaryTimeline {
   }
 
   recordChange(input: SalaryChangeInput): SalaryTimeline {
+    if (input.effectiveFrom < this.#hireDate) {
+      throw new EffectiveDateBeforeHireError(input.effectiveFrom, this.#hireDate);
+    }
+
     const latestLive = this.#latestLiveRecord();
     if (latestLive !== null && input.effectiveFrom <= latestLive.effectiveFrom) {
       throw new RetroactiveChangeError(

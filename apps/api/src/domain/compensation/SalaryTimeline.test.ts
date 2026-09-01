@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
 import type { SalaryRecord } from './SalaryRecord.js';
-import { RetroactiveChangeError, SalaryTimeline } from './SalaryTimeline.js';
+import {
+  EffectiveDateBeforeHireError,
+  RetroactiveChangeError,
+  SalaryTimeline,
+} from './SalaryTimeline.js';
 
 function makeRecord(overrides: Partial<SalaryRecord> = {}): SalaryRecord {
   return {
@@ -78,5 +82,20 @@ describe('SalaryTimeline.recordChange', () => {
 
     expect(change('2026-04-01')).toThrow(RetroactiveChangeError); // same day
     expect(change('2025-06-01')).toThrow(RetroactiveChangeError); // earlier
+  });
+
+  it('rejects a change dated before the employee hire date', () => {
+    const timeline = new SalaryTimeline({ hireDate: '2023-01-01', records: [] });
+
+    const change = () =>
+      timeline.recordChange({
+        amountMinor: 1_500_000,
+        currency: 'INR',
+        effectiveFrom: '2022-12-01',
+        changeReason: 'HIRE',
+        note: null,
+      });
+
+    expect(change).toThrow(EffectiveDateBeforeHireError);
   });
 });
