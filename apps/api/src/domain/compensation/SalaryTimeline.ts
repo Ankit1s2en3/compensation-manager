@@ -1,3 +1,4 @@
+import { DomainError } from '../shared/DomainError.js';
 import type { ChangeReason } from './ChangeReason.js';
 import type { SalaryRecord } from './SalaryRecord.js';
 
@@ -7,6 +8,15 @@ export interface SalaryChangeInput {
   effectiveFrom: string;
   changeReason: ChangeReason;
   note: string | null;
+}
+
+/** I8: a change must start strictly after the latest live record's effective_from. */
+export class RetroactiveChangeError extends DomainError {
+  constructor(attempted: string, latestLive: string) {
+    super(
+      `a salary change must start after the latest live record (${latestLive}); got ${attempted}`,
+    );
+  }
 }
 
 /**
@@ -27,6 +37,14 @@ export class SalaryTimeline {
   }
 
   recordChange(input: SalaryChangeInput): SalaryTimeline {
+    const latestLive = this.#latestLiveRecord();
+    if (latestLive !== null && input.effectiveFrom <= latestLive.effectiveFrom) {
+      throw new RetroactiveChangeError(
+        input.effectiveFrom,
+        latestLive.effectiveFrom,
+      );
+    }
+
     const record: SalaryRecord = {
       id: null,
       amountMinor: input.amountMinor,
@@ -42,5 +60,14 @@ export class SalaryTimeline {
       hireDate: this.#hireDate,
       records: [...this.#records, record],
     });
+  }
+
+  #latestLiveRecord(): SalaryRecord | null {
+    const live = this.#records.filter((r) => r.supersededAt === null);
+    return live.reduce<SalaryRecord | null>(
+      (latest, r) =>
+        latest === null || r.effectiveFrom > latest.effectiveFrom ? r : latest,
+      null,
+    );
   }
 }

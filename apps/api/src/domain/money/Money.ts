@@ -1,12 +1,12 @@
 import { exponentOf } from './Currency.js';
 
-export class CurrencyMismatchError extends Error {
+import { DomainError } from '../shared/DomainError.js';
+
+export class CurrencyMismatchError extends DomainError {
   constructor(left: string, right: string) {
     super(`Cannot combine Money in ${left} with Money in ${right}`);
-    this.name = 'CurrencyMismatchError';
   }
 }
-
 /**
  * An amount of money: an integer count of minor units plus a currency code.
  * Immutable — every operation returns a new instance.
