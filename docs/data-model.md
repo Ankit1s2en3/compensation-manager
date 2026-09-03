@@ -151,12 +151,19 @@ ALTER TABLE salary_records ADD CONSTRAINT salary_no_overlap
   EXCLUDE USING gist (
     employee_id                                  WITH =,
     daterange(effective_from, effective_to, '[]') WITH &&
-  ) WHERE (superseded_at IS NULL);
+  ) WHERE (superseded_at IS NULL)
+  DEFERRABLE INITIALLY IMMEDIATE;
 ```
 
 An exclusion constraint is the generalisation of `UNIQUE`: instead of "these columns must not
 be equal", it says "these expressions must not *overlap*". The `WHERE` clause is what lets a
 superseded row share dates with its replacement.
+
+`DEFERRABLE INITIALLY IMMEDIATE` keeps the per-statement check for every transaction *except*
+the one that opts out. Only a correction does: it inserts the replacement while the original
+is still live and sharing its range, so `SalaryRecordRepository.apply()` issues
+`SET CONSTRAINTS salary_no_overlap DEFERRED` for that transaction alone, and the check lands
+at `COMMIT` once the original is superseded.
 
 ---
 
