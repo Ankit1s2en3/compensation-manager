@@ -29,6 +29,11 @@ export interface NewSalaryRecord extends SalaryFacts {
  * the next period opens. supersededAt / supersededById are set once, when the
  * record is corrected. employeeId is deliberately absent: a SalaryRecord is only
  * ever handled inside a SalaryTimeline, which is already scoped to one employee.
+ *
+ * Hand-written, not `typeof salaryRecords.$inferSelect`. domain/ cannot import
+ * Drizzle — deriving this from the schema would make the domain depend on
+ * infrastructure, exactly backwards. infrastructure/repositories/mappers.ts
+ * builds one of these from a schema row; keep the two shapes in sync by hand.
  */
 export interface SalaryRecord extends SalaryFacts {
   id: string;
