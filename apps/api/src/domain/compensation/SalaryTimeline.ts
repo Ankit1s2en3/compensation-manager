@@ -51,6 +51,15 @@ export class SalaryTimeline {
     this.#records = params.records;
   }
 
+  /**
+   * Every record, in the order it was constructed with (repository sorts by
+   * effective_from, then id). Superseded rows included — the profile timeline
+   * and the audit view (§7) both enumerate them.
+   */
+  get records(): readonly SalaryRecord[] {
+    return this.#records;
+  }
+
   /** The record in force on `date` (ISO `YYYY-MM-DD`), or null if none covers it. */
   currentAt(date: string): SalaryRecord | null {
     return this.#records.find((r) => isLive(r) && covers(r, date)) ?? null;

@@ -443,15 +443,17 @@ anywhere beneath it.**
 class SalaryTimeline {
   constructor(params: { employeeId: string; hireDate: string; records: readonly SalaryRecord[] });
 
-  currentAt(date: string): SalaryRecord | null;           // the live record covering `date`
+  get records(): readonly SalaryRecord[];                 // all of them, superseded included
+  currentAt(date: string): SalaryRecord | null;          // the live record covering `date`
 
   recordChange(input: SalaryChangeInput): TimelineWrites; // throws on I3, I4, I8, I10
   correct(recordId: string, amount: Money, note: string, clock: Clock): TimelineWrites; // throws on I5, I9, I10
 }
 ```
 
-The "latest live record" and "open live period" lookups are private helpers — the I8 check
-and the period-close need them, nothing outside the class does yet, so they aren't exposed.
+`records` is exposed because the profile timeline and the audit view (§7) enumerate every
+row, superseded ones struck through. The "latest live record" and "open live period" lookups
+stay private helpers — only the I8 check and the period-close need them.
 
 **`currentAt` is invariant §7's "current salary" query, expressed in code.** The repository
 also implements it in SQL, because looking up one employee should not load their whole
