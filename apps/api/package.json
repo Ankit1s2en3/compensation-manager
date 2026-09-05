@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run src/domain",
-    "test:integration": "vitest run src/infrastructure src/http",
+    "test:integration": "dotenv -e ../../.env -- vitest run -c vitest.integration.config.ts",
     "db:generate": "dotenv -e ../../.env -- drizzle-kit generate",
     "db:migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts"

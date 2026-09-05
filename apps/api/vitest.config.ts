@@ -1,10 +1,16 @@
 import { defineConfig } from 'vitest/config';
 
+// Unit config — no database, ever. Integration tests (infrastructure/, http/)
+// have their own config with a globalSetup that runs migrations.
 export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
-    // Scaffold has no tests yet; `npm test` must still exit 0.
+    exclude: [
+      '**/node_modules/**',
+      'src/infrastructure/**',
+      'src/http/**',
+    ],
     passWithNoTests: true,
   },
 });
