@@ -16,6 +16,10 @@ const fixedClock: Clock = {
   today: () => '2026-06-01',
 };
 
+// The date search() measures "current salary" at — supplied by the caller,
+// pinned here so the fixture dates don't rot.
+const ON = '2026-06-01';
+
 let employees: DrizzleEmployeeRepository;
 let salaries: DrizzleSalaryRecordRepository;
 
@@ -151,6 +155,7 @@ describe('EmployeeRepository.search', () => {
     const engineering = await employees.search(
       { departmentId: '1' },
       { limit: 50, offset: 0 },
+      ON,
     );
     expect(engineering.total).toBe(5);
     expect(engineering.items.map((i) => i.id)).toEqual(['1', '2', '5', '6', '7']);
@@ -159,6 +164,7 @@ describe('EmployeeRepository.search', () => {
     const us = await employees.search(
       { countryCode: 'US' },
       { limit: 50, offset: 0 },
+      ON,
     );
     expect(us.total).toBe(4);
     expect(us.items.map((i) => i.id)).toEqual(['1', '5', '6', '8']);
@@ -167,16 +173,17 @@ describe('EmployeeRepository.search', () => {
     const both = await employees.search(
       { departmentId: '1', countryCode: 'US' },
       { limit: 50, offset: 0 },
+      ON,
     );
     expect(both.items.map((i) => i.id)).toEqual(['1', '5', '6']);
 
     // page through Engineering, two at a time
-    const p0 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 0 });
+    const p0 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 0 }, ON);
     expect(p0.total).toBe(5);
     expect(p0.items.map((i) => i.id)).toEqual(['1', '2']);
-    const p2 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 2 });
+    const p2 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 2 }, ON);
     expect(p2.items.map((i) => i.id)).toEqual(['5', '6']);
-    const p4 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 4 });
+    const p4 = await employees.search({ departmentId: '1' }, { limit: 2, offset: 4 }, ON);
     expect(p4.items.map((i) => i.id)).toEqual(['7']);
 
     // current salary resolved in the same query — and the corrected employee

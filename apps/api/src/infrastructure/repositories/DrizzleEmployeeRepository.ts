@@ -43,12 +43,14 @@ export class DrizzleEmployeeRepository implements EmployeeRepository {
   async search(
     criteria: EmployeeSearchCriteria,
     page: Page,
+    on: string,
   ): Promise<Paged<EmployeeListItem>> {
     const c = criteria;
-    // "Current" for the directory means today — computed here (infrastructure,
-    // not domain/application, so `new Date()` is allowed) and fed through the
-    // same liveAndCovering predicate findCurrentSalary uses.
-    const today = new Date().toISOString().slice(0, 10);
+    // The repository does not decide what "today" is. If it called new Date()
+    // here, an integration test could not pin the date and the fixture dates
+    // would rot as real time passes — the same reason the domain takes an
+    // injected Clock. `on` (the same value findCurrentSalary takes) feeds the
+    // shared liveAndCovering predicate.
 
     // Each nullable filter is skipped when its parameter is null.
     const where = sql`
@@ -67,7 +69,7 @@ export class DrizzleEmployeeRepository implements EmployeeRepository {
       LEFT JOIN LATERAL (
         SELECT amount_minor, currency_code
         FROM salary_records
-        WHERE ${liveAndCovering(today)} AND employee_id = e.id
+        WHERE ${liveAndCovering(on)} AND employee_id = e.id
         ORDER BY effective_from DESC
         LIMIT 1
       ) cur ON true

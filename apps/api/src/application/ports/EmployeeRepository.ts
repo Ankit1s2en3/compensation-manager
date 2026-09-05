@@ -61,10 +61,13 @@ export interface EmployeeRepository {
 
   /**
    * Server-side directory search. The current salary is resolved in the same
-   * query (a lateral join) — never one lookup per row.
+   * query (a lateral join) — never one lookup per row. `on` (ISO YYYY-MM-DD) is
+   * the date "current salary" is measured at; the caller supplies it, same as
+   * findCurrentSalary.
    */
   search(
     criteria: EmployeeSearchCriteria,
     page: Page,
+    on: string,
   ): Promise<Paged<EmployeeListItem>>;
 }
