@@ -4,7 +4,6 @@ import { RetroactiveChangeError } from '../domain/compensation/errors.js';
 import { SalaryTimeline } from '../domain/compensation/SalaryTimeline.js';
 import { Money } from '../domain/money/Money.js';
 import { RecordSalaryChange } from './RecordSalaryChange.js';
-import { FixedClock } from './testing/FixedClock.js';
 import { InMemorySalaryRecordRepository } from './testing/InMemorySalaryRecordRepository.js';
 import { aSalaryRecord } from './testing/builders.js';
 
@@ -24,10 +23,7 @@ describe('RecordSalaryChange', () => {
   it('passes the domain writes straight to apply()', async () => {
     const salaries = seed();
 
-    const result = await new RecordSalaryChange(
-      salaries,
-      new FixedClock('2026-05-01'),
-    ).execute({
+    const result = await new RecordSalaryChange(salaries).execute({
       employeeId: '1',
       amountMinor: 13_000_000,
       currency: 'USD',
@@ -65,7 +61,7 @@ describe('RecordSalaryChange', () => {
     ]);
 
     await expect(
-      new RecordSalaryChange(salaries, new FixedClock('2026-05-01')).execute({
+      new RecordSalaryChange(salaries).execute({
         employeeId: '1',
         amountMinor: 13_000_000,
         currency: 'USD',
