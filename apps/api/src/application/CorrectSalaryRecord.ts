@@ -4,7 +4,6 @@ import { Money } from '../domain/money/Money.js';
 import type { SalaryRecordRepository } from './ports/SalaryRecordRepository.js';
 
 export interface CorrectSalaryRecordCommand {
-  employeeId: string;
   recordId: string;
   amountMinor: number;
   currency: string;
@@ -12,9 +11,9 @@ export interface CorrectSalaryRecordCommand {
 }
 
 /**
- * Correct a salary record. Load the timeline, let the domain build the writes,
- * persist them. No validation here — I5 / I9 / I10 live in the domain and their
- * errors propagate untouched.
+ * Correct a salary record. Resolve its timeline, let the domain build the
+ * writes, persist them. No validation here — I5 / I9 / I10 live in the domain
+ * and their errors propagate untouched.
  */
 export class CorrectSalaryRecord {
   constructor(
@@ -23,7 +22,7 @@ export class CorrectSalaryRecord {
   ) {}
 
   async execute(cmd: CorrectSalaryRecordCommand): Promise<SalaryRecord> {
-    const timeline = await this.salaries.findTimeline(cmd.employeeId);
+    const timeline = await this.salaries.findTimelineForRecord(cmd.recordId);
     const writes = timeline.correct(
       cmd.recordId,
       Money.of(cmd.amountMinor, cmd.currency),

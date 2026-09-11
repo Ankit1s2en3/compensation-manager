@@ -1,5 +1,6 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 
+import { SalaryRecordNotFoundError } from '../../application/errors.js';
 import type { ExchangeRateProvider } from '../../application/ports/ExchangeRateProvider.js';
 import type { SalaryRecordRepository } from '../../application/ports/SalaryRecordRepository.js';
 import { AlreadyCorrectedError } from '../../domain/compensation/errors.js';
@@ -44,6 +45,18 @@ export class DrizzleSalaryRecordRepository implements SalaryRecordRepository {
       hireDate: emp.hireDate,
       records: rows.map(toSalaryRecord),
     });
+  }
+
+  async findTimelineForRecord(recordId: string): Promise<SalaryTimeline> {
+    const [row] = await this.db
+      .select({ employeeId: salaryRecords.employeeId })
+      .from(salaryRecords)
+      .where(eq(salaryRecords.id, Number(recordId)))
+      .limit(1);
+    if (row === undefined) {
+      throw new SalaryRecordNotFoundError(recordId);
+    }
+    return this.findTimeline(String(row.employeeId));
   }
 
   async findCurrentSalary(

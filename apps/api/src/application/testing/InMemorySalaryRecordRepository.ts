@@ -3,6 +3,7 @@ import { covers, isLive } from '../../domain/compensation/SalaryRecord.js';
 import type { SalaryRecord } from '../../domain/compensation/SalaryRecord.js';
 import { SalaryTimeline } from '../../domain/compensation/SalaryTimeline.js';
 import type { TimelineWrites } from '../../domain/compensation/SalaryTimeline.js';
+import { SalaryRecordNotFoundError } from '../errors.js';
 import type { SalaryRecordRepository } from '../ports/SalaryRecordRepository.js';
 
 export interface EmployeeTimelineSeed {
@@ -46,6 +47,15 @@ export class InMemorySalaryRecordRepository implements SalaryRecordRepository {
         Number(a.id) - Number(b.id),
     );
     return new SalaryTimeline({ employeeId, hireDate, records });
+  }
+
+  async findTimelineForRecord(recordId: string): Promise<SalaryTimeline> {
+    for (const [employeeId, list] of this.#byEmployee.entries()) {
+      if (list.some((r) => r.id === recordId)) {
+        return this.findTimeline(employeeId);
+      }
+    }
+    throw new SalaryRecordNotFoundError(recordId);
   }
 
   async findCurrentSalary(

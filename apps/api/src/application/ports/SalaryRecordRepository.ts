@@ -8,6 +8,12 @@ export interface SalaryRecordRepository {
   /** Every record for the employee (superseded ones included), as a timeline. */
   findTimeline(employeeId: string): Promise<SalaryTimeline>;
 
+  /**
+   * The timeline of the employee who owns `recordId` — the correction endpoint
+   * knows a record id, not an employee id. Throws SalaryRecordNotFoundError.
+   */
+  findTimelineForRecord(recordId: string): Promise<SalaryTimeline>;
+
   /** The live record in force on `on` (ISO `YYYY-MM-DD`), or null. */
   findCurrentSalary(employeeId: string, on: string): Promise<SalaryRecord | null>;
 

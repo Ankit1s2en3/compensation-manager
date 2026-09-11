@@ -1,10 +1,18 @@
 /**
- * An application-layer error: the domain has no Employee concept, so "no such
- * employee" is not a DomainError. The HTTP layer maps this to 404.
+ * Application-layer "not found" errors. The domain has no Employee concept and
+ * the salary record id in a URL is a routing detail, not a domain fact — so
+ * these are not DomainErrors. The HTTP layer maps them to 404.
  */
 export class EmployeeNotFoundError extends Error {
   constructor(employeeId: string) {
     super(`no employee ${employeeId}`);
     this.name = 'EmployeeNotFoundError';
+  }
+}
+
+export class SalaryRecordNotFoundError extends Error {
+  constructor(recordId: string) {
+    super(`no salary record ${recordId}`);
+    this.name = 'SalaryRecordNotFoundError';
   }
 }

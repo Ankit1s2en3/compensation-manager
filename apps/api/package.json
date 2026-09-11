@@ -18,6 +18,7 @@
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "postgres": "^3.4.9",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.3",
     "@types/supertest": "^7.2.1",

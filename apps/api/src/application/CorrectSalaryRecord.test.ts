@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AlreadyCorrectedError } from '../domain/compensation/errors.js';
 import { Money } from '../domain/money/Money.js';
 import { CorrectSalaryRecord } from './CorrectSalaryRecord.js';
+import { SalaryRecordNotFoundError } from './errors.js';
 import { FixedClock } from './testing/FixedClock.js';
 import { InMemorySalaryRecordRepository } from './testing/InMemorySalaryRecordRepository.js';
 import { aSalaryRecord } from './testing/builders.js';
@@ -34,7 +35,6 @@ describe('CorrectSalaryRecord', () => {
 
     await expect(
       new CorrectSalaryRecord(salaries, new FixedClock('2026-05-01')).execute({
-        employeeId: '1',
         recordId: '20', // already superseded -> I5
         amountMinor: 17_000_000,
         currency: 'USD',
@@ -43,5 +43,18 @@ describe('CorrectSalaryRecord', () => {
     ).rejects.toThrow(AlreadyCorrectedError);
 
     expect(salaries.applyCalls).toHaveLength(0);
+  });
+
+  it('throws SalaryRecordNotFoundError for an unknown record', async () => {
+    const salaries = new InMemorySalaryRecordRepository([]);
+
+    await expect(
+      new CorrectSalaryRecord(salaries, new FixedClock('2026-05-01')).execute({
+        recordId: '404',
+        amountMinor: 17_000_000,
+        currency: 'USD',
+        note: 'x',
+      }),
+    ).rejects.toThrow(SalaryRecordNotFoundError);
   });
 });
