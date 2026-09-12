@@ -4,6 +4,7 @@ import type { Express } from 'express';
 
 import type { Container } from './container.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { analyticsRoutes } from './routes/analytics.js';
 import { employeeRoutes } from './routes/employees.js';
 import { healthRoutes } from './routes/health.js';
 import { salaryRecordRoutes } from './routes/salaryRecords.js';
@@ -23,6 +24,7 @@ export function createServer(container: Container): Express {
   app.use('/health', healthRoutes());
   app.use('/api/employees', employeeRoutes(container));
   app.use('/api/salary-records', salaryRecordRoutes(container));
+  app.use('/api/analytics', analyticsRoutes(container));
 
   app.use(errorHandler);
   return app;
