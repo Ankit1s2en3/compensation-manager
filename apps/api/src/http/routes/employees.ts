@@ -4,8 +4,9 @@ import type { Container } from '../container.js';
 import {
   toEmployeeListItemResponse,
   toEmployeeProfileResponse,
+  toSalaryRecordResponse,
 } from '../responses/employees.js';
-import { employeeListQuery } from '../schemas/employees.js';
+import { employeeListQuery, salaryChangeBody } from '../schemas/employees.js';
 
 export function employeeRoutes(container: Container): Router {
   const router = Router();
@@ -25,6 +26,15 @@ export function employeeRoutes(container: Container): Router {
   router.get('/:id', async (req, res) => {
     const profile = await container.getEmployeeProfile.execute(req.params.id);
     res.json(toEmployeeProfileResponse(profile));
+  });
+
+  router.post('/:id/salary-changes', async (req, res) => {
+    const body = salaryChangeBody.parse(req.body);
+    const record = await container.recordSalaryChange.execute({
+      employeeId: req.params.id,
+      ...body,
+    });
+    res.status(201).json(toSalaryRecordResponse(record));
   });
 
   return router;

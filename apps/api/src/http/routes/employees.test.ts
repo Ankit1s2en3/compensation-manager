@@ -91,3 +91,57 @@ describe('GET /api/employees/:id', () => {
     expect(response.body.code).toBe('EmployeeNotFoundError');
   });
 });
+
+describe('POST /api/employees/:id/salary-changes', () => {
+  it('returns 201 and the new record', async () => {
+    // employee 1: single HIRE, $120,000, effective 2024-01-01, open
+    const response = await supertest(app)
+      .post('/api/employees/1/salary-changes')
+      .send({
+        amountMinor: 13_000_000,
+        currency: 'USD',
+        effectiveFrom: '2026-06-01',
+        changeReason: 'MERIT',
+        note: null,
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.amount).toEqual({
+      amountMinor: 13_000_000,
+      currency: 'USD',
+      exponent: 2,
+    });
+    expect(response.body.changeReason).toBe('MERIT');
+    expect(response.body.effectiveFrom).toBe('2026-06-01');
+  });
+
+  it('returns 422 with the domain error code for a retroactive date', async () => {
+    const response = await supertest(app)
+      .post('/api/employees/1/salary-changes')
+      .send({
+        amountMinor: 13_000_000,
+        currency: 'USD',
+        // same day as the HIRE record's effective_from — must be strictly after (I8)
+        effectiveFrom: '2024-01-01',
+        changeReason: 'MERIT',
+        note: null,
+      });
+
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('RetroactiveChangeError');
+  });
+
+  it('returns 400 when effectiveFrom is missing', async () => {
+    const response = await supertest(app)
+      .post('/api/employees/1/salary-changes')
+      .send({
+        amountMinor: 13_000_000,
+        currency: 'USD',
+        changeReason: 'MERIT',
+        note: null,
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.fieldErrors.effectiveFrom).toBeDefined();
+  });
+});
