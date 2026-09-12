@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import type { Container } from '../container.js';
+import type { Container } from '../../container.js';
 import { toSalaryRecordResponse } from '../responses/employees.js';
 import { correctionBody } from '../schemas/salaryRecords.js';
 

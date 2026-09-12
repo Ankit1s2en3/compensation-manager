@@ -2,7 +2,7 @@ import supertest from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { testDb } from '../../infrastructure/testing/testDb.js';
-import { createContainer } from '../container.js';
+import { createContainer } from '../../container.js';
 import { createServer } from '../server.js';
 
 const app = createServer(createContainer(testDb));

@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import type { Express } from 'express';
 
-import type { Container } from './container.js';
+import type { Container } from '../container.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { analyticsRoutes } from './routes/analytics.js';
 import { employeeRoutes } from './routes/employees.js';

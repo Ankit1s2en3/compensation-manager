@@ -20,6 +20,13 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
+  // Order matters: this block must stay before the DomainError check below.
+  // EmployeeNotFoundError and SalaryRecordNotFoundError currently extend
+  // plain Error (application/errors.ts), not DomainError, so today the two
+  // blocks can't actually collide — but if either is ever changed to extend
+  // DomainError (e.g. for a uniform error hierarchy), the DomainError check
+  // would catch it first if it came first, and a 404 would silently become a
+  // 422. Keep the more specific check above the more general one regardless.
   if (
     err instanceof EmployeeNotFoundError ||
     err instanceof SalaryRecordNotFoundError

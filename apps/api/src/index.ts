@@ -1,5 +1,5 @@
+import { createContainer } from './container.js';
 import { db } from './infrastructure/db.js';
-import { createContainer } from './http/container.js';
 import { createServer } from './http/server.js';
 
 const port = Number(process.env.PORT ?? 3000);

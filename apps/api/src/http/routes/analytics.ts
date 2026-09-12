@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import type { Container } from '../container.js';
+import type { Container } from '../../container.js';
 import { compensationStatsQuery } from '../schemas/analytics.js';
 
 export function analyticsRoutes(container: Container): Router {
