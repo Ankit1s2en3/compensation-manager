@@ -1,5 +1,10 @@
-// API entry point — scaffold only.
-//
-// The Express app and the composition root (container.ts) are added with the
-// HTTP layer. Nothing is wired yet; `npm run dev` just proves the toolchain runs.
-console.log('compensation-manager api: scaffold only — nothing wired yet');
+import { db } from './infrastructure/db.js';
+import { createContainer } from './http/container.js';
+import { createServer } from './http/server.js';
+
+const port = Number(process.env.PORT ?? 3000);
+const app = createServer(createContainer(db));
+
+app.listen(port, () => {
+  console.log(`compensation-manager api listening on :${port}`);
+});
