@@ -53,3 +53,41 @@ describe('GET /api/employees', () => {
     expect(response.body.total).toBe(12);
   });
 });
+
+describe('GET /api/employees/:id', () => {
+  it('returns the profile with the timeline, superseded records flagged', async () => {
+    // employee 5 has a correction: #9 (MERIT) superseded by #10 (MERIT)
+    const response = await supertest(app).get('/api/employees/5');
+
+    expect(response.status).toBe(200);
+    expect(response.body.employee.id).toBe('5');
+    expect(response.body.currentRecord.id).toBe('10');
+    expect(response.body.currentRecord.amount).toEqual({
+      amountMinor: 17_200_000,
+      currency: 'USD',
+      exponent: 2,
+    });
+
+    const byId = new Map(
+      response.body.history.map((h: { record: { id: string } }) => [
+        h.record.id,
+        h,
+      ]),
+    );
+    expect(byId.get('9')).toMatchObject({
+      isSuperseded: true,
+      isCurrent: false,
+    });
+    expect(byId.get('10')).toMatchObject({
+      isSuperseded: false,
+      isCurrent: true,
+    });
+  });
+
+  it('returns 404 for an unknown id', async () => {
+    const response = await supertest(app).get('/api/employees/999999');
+
+    expect(response.status).toBe(404);
+    expect(response.body.code).toBe('EmployeeNotFoundError');
+  });
+});

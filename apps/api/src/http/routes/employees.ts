@@ -1,7 +1,10 @@
 import { Router } from 'express';
 
 import type { Container } from '../container.js';
-import { toEmployeeListItemResponse } from '../responses/employees.js';
+import {
+  toEmployeeListItemResponse,
+  toEmployeeProfileResponse,
+} from '../responses/employees.js';
 import { employeeListQuery } from '../schemas/employees.js';
 
 export function employeeRoutes(container: Container): Router {
@@ -17,6 +20,11 @@ export function employeeRoutes(container: Container): Router {
       limit: result.limit,
       offset: result.offset,
     });
+  });
+
+  router.get('/:id', async (req, res) => {
+    const profile = await container.getEmployeeProfile.execute(req.params.id);
+    res.json(toEmployeeProfileResponse(profile));
   });
 
   return router;
