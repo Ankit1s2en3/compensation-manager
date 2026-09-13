@@ -1,17 +1,23 @@
 import supertest from 'supertest';
 import { describe, expect, it } from 'vitest';
 
+import { authHeader } from '../../infrastructure/testing/authHeader.js';
 import { testDb } from '../../infrastructure/testing/testDb.js';
+import { TEST_JWT_SECRET } from '../../infrastructure/testing/testJwtSecret.js';
 import { createContainer } from '../../container.js';
 import { createServer } from '../server.js';
 
-const app = createServer(createContainer(testDb));
+const app = createServer(
+  createContainer(testDb, TEST_JWT_SECRET),
+  TEST_JWT_SECRET,
+);
 
 describe('GET /api/employees', () => {
   it('filters by department and paginates', async () => {
     // Engineering (department 1) fixtures: 1, 2, 5, 6, 7
     const all = await supertest(app)
       .get('/api/employees')
+      .set('Authorization', await authHeader(app))
       .query({ department: '1' });
 
     expect(all.status).toBe(200);
@@ -26,6 +32,7 @@ describe('GET /api/employees', () => {
 
     const page = await supertest(app)
       .get('/api/employees')
+      .set('Authorization', await authHeader(app))
       .query({ department: '1', limit: 2, offset: 2 });
 
     expect(page.body.total).toBe(5);
@@ -46,7 +53,9 @@ describe('GET /api/employees', () => {
   });
 
   it('defaults to limit 25 and offset 0 over all twelve fixtures', async () => {
-    const response = await supertest(app).get('/api/employees');
+    const response = await supertest(app)
+      .get('/api/employees')
+      .set('Authorization', await authHeader(app));
 
     expect(response.body.limit).toBe(25);
     expect(response.body.offset).toBe(0);
@@ -57,7 +66,9 @@ describe('GET /api/employees', () => {
 describe('GET /api/employees/:id', () => {
   it('returns the profile with the timeline, superseded records flagged', async () => {
     // employee 5 has a correction: #9 (MERIT) superseded by #10 (MERIT)
-    const response = await supertest(app).get('/api/employees/5');
+    const response = await supertest(app)
+      .get('/api/employees/5')
+      .set('Authorization', await authHeader(app));
 
     expect(response.status).toBe(200);
     expect(response.body.employee.id).toBe('5');
@@ -85,7 +96,9 @@ describe('GET /api/employees/:id', () => {
   });
 
   it('returns 404 for an unknown id', async () => {
-    const response = await supertest(app).get('/api/employees/999999');
+    const response = await supertest(app)
+      .get('/api/employees/999999')
+      .set('Authorization', await authHeader(app));
 
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('EmployeeNotFoundError');
@@ -97,6 +110,7 @@ describe('POST /api/employees/:id/salary-changes', () => {
     // employee 1: single HIRE, $120,000, effective 2024-01-01, open
     const response = await supertest(app)
       .post('/api/employees/1/salary-changes')
+      .set('Authorization', await authHeader(app))
       .send({
         amountMinor: 13_000_000,
         currency: 'USD',
@@ -118,6 +132,7 @@ describe('POST /api/employees/:id/salary-changes', () => {
   it('returns 422 with the domain error code for a retroactive date', async () => {
     const response = await supertest(app)
       .post('/api/employees/1/salary-changes')
+      .set('Authorization', await authHeader(app))
       .send({
         amountMinor: 13_000_000,
         currency: 'USD',
@@ -134,6 +149,7 @@ describe('POST /api/employees/:id/salary-changes', () => {
   it('returns 400 when effectiveFrom is missing', async () => {
     const response = await supertest(app)
       .post('/api/employees/1/salary-changes')
+      .set('Authorization', await authHeader(app))
       .send({
         amountMinor: 13_000_000,
         currency: 'USD',
