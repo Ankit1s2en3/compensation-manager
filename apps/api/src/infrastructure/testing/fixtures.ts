@@ -1,3 +1,5 @@
+import { scryptSync } from 'node:crypto';
+
 import { sql } from 'drizzle-orm';
 
 import type { Database } from '../db.js';
@@ -69,10 +71,18 @@ const EXCHANGE_RATES = CURRENCIES.map((c) => ({
   rateToBase: (RATE[c.code] ?? 1).toFixed(8),
 }));
 
+/** The one seeded HR user's login credentials, for tests that authenticate. */
+export const SEEDED_USER = {
+  email: 'hr.manager@acme.test',
+  password: 'fixture-password',
+};
+
+const SEEDED_USER_SALT = 'fixture-salt';
+
 const USER = {
   id: 1,
-  email: 'hr.manager@acme.test',
-  passwordHash: 'not-a-real-hash',
+  email: SEEDED_USER.email,
+  passwordHash: `scrypt$${SEEDED_USER_SALT}$${scryptSync(SEEDED_USER.password, SEEDED_USER_SALT, 64).toString('hex')}`,
   role: 'HR_MANAGER',
 };
 

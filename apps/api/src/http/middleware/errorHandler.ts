@@ -3,6 +3,7 @@ import { z, ZodError } from 'zod';
 
 import {
   EmployeeNotFoundError,
+  InvalidCredentialsError,
   SalaryRecordNotFoundError,
 } from '../../application/errors.js';
 import { DomainError } from '../../domain/shared/DomainError.js';
@@ -37,6 +38,14 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   if (err instanceof DomainError) {
     res.status(422).json({ error: err.message, code: err.name });
+    return;
+  }
+
+  // Also plain Error, also deliberately not a DomainError — see the comment
+  // above the 404 block. Same "no such email" and "wrong password" get the
+  // same status and message, so a caller can't tell which one occurred.
+  if (err instanceof InvalidCredentialsError) {
+    res.status(401).json({ error: err.message, code: err.name });
     return;
   }
 

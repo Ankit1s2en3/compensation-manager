@@ -16,3 +16,15 @@ export class SalaryRecordNotFoundError extends Error {
     this.name = 'SalaryRecordNotFoundError';
   }
 }
+
+/**
+ * Thrown for both "no such email" and "wrong password" — deliberately the
+ * same error, same message, for both. Telling a caller which one occurred
+ * would tell them which emails exist. Maps to 401.
+ */
+export class InvalidCredentialsError extends Error {
+  constructor() {
+    super('invalid email or password');
+    this.name = 'InvalidCredentialsError';
+  }
+}
