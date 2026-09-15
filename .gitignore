@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 coverage/
+apps/api/public/
 .env
 .env.*
 !.env.example
