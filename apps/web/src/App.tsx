@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from '@/auth/AuthProvider';
 import { RequireAuth } from '@/auth/RequireAuth';
-import { EmployeesPage } from '@/pages/EmployeesPage';
+import { EmployeesPage } from '@/features/employees/EmployeesPage';
 import { LoginPage } from '@/pages/LoginPage';
 
 const queryClient = new QueryClient();
