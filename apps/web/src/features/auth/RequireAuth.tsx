@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-import { useAuth } from '@/auth/AuthProvider';
+import { useAuth } from './AuthProvider';
 
 /**
  * Layout route guarding every nested route.

@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
-import { AuthProvider } from '@/auth/AuthProvider';
-import { RequireAuth } from '@/auth/RequireAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { AuthProvider } from '@/features/auth/AuthProvider';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RequireAuth } from '@/features/auth/RequireAuth';
 import { EmployeesPage } from '@/features/employees/EmployeesPage';
-import { LoginPage } from '@/pages/LoginPage';
 
 const queryClient = new QueryClient();
 

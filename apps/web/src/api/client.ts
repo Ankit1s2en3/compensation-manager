@@ -1,4 +1,4 @@
-import { clearAuth, getToken } from '@/auth/storage';
+import { clearAuth, getToken } from '@/features/auth/storage';
 
 /**
  * Mirrors the server's error-response shapes: ZodError -> 400 with

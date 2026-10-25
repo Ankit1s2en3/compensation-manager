@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
-import { useAuth } from '@/auth/AuthProvider';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 /** Shell for every signed-in screen: page container, header, then the route. */
 export function AppLayout() {
