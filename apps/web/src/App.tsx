@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { EmployeeDetailPage } from '@/features/employees/EmployeeDetailPage';
 import { EmployeesPage } from '@/features/employees/EmployeesPage';
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ export default function App() {
             <Route element={<RequireAuth />}>
               <Route element={<AppLayout />}>
                 <Route path="/employees" element={<EmployeesPage />} />
+                <Route path="/employees/:employeeId" element={<EmployeeDetailPage />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/employees" replace />} />

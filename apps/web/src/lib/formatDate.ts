@@ -13,3 +13,15 @@ export function formatDate(iso: string): string {
     day: 'numeric',
   }).format(date);
 }
+
+/**
+ * For full timestamps (e.g. supersededAt), not bare dates: these carry a
+ * real instant, so the calendar day shown is the viewer's local day.
+ */
+export function formatInstantDate(isoTimestamp: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(isoTimestamp));
+}

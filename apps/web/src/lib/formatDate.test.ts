@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDate } from './formatDate';
+import { formatDate, formatInstantDate } from './formatDate';
 
 describe('formatDate', () => {
   it('renders the same calendar day the ISO string names, not the UTC-shifted one', () => {
@@ -17,5 +17,13 @@ describe('formatDate', () => {
 
   it('renders the last day of the year correctly', () => {
     expect(formatDate('2025-12-31')).toBe('Dec 31, 2025');
+  });
+});
+
+describe('formatInstantDate', () => {
+  it('renders a full ISO timestamp as a calendar date', () => {
+    // Midday UTC lands on the same calendar day in every timezone from
+    // UTC-11 to UTC+11, so this holds wherever the suite runs.
+    expect(formatInstantDate('2025-03-14T12:00:00.000Z')).toBe('Mar 14, 2025');
   });
 });

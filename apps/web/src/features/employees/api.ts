@@ -1,5 +1,9 @@
 import { apiFetch } from '@/api/client';
-import type { EmployeeListItemResponse, PagedResponse } from '@/api/types';
+import type {
+  EmployeeListItemResponse,
+  EmployeeProfileResponse,
+  PagedResponse,
+} from '@/api/types';
 
 export const EMPLOYEE_FILTER_KEYS = ['department', 'country', 'level', 'status', 'q'] as const;
 export type EmployeeFilterKey = (typeof EMPLOYEE_FILTER_KEYS)[number];
@@ -31,4 +35,8 @@ export function listEmployees(
   params: EmployeeListParams,
 ): Promise<PagedResponse<EmployeeListItemResponse>> {
   return apiFetch<PagedResponse<EmployeeListItemResponse>>(`/employees?${toQueryString(params)}`);
+}
+
+export function getEmployeeProfile(id: string): Promise<EmployeeProfileResponse> {
+  return apiFetch<EmployeeProfileResponse>(`/employees/${encodeURIComponent(id)}`);
 }

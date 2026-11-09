@@ -7,10 +7,13 @@
 // core row-model/header/cell/row APIs (getHeaderGroups, getRowModel,
 // getAllCells, flexRender) are always present regardless.
 import { createColumnHelper, tableFeatures } from '@tanstack/react-table';
+import { Link } from 'react-router-dom';
 
 import type { EmployeeListItemResponse } from '@/api/types';
 import { formatMoney } from '@/lib/formatMoney';
 import { countryName, departmentName, jobLevelName } from '@/lib/lookups';
+
+import { FROM_DIRECTORY_STATE, employeePath } from '../paths';
 
 // Static, module-scope per TanStack's own recommendation — features and the
 // column helper they type don't depend on anything render-time.
@@ -24,7 +27,17 @@ export const employeeColumns = columnHelper.columns([
   columnHelper.display({
     id: 'name',
     header: 'Name',
-    cell: ({ row }) => `${row.original.firstName} ${row.original.lastName}`,
+    // A real link, so keyboard, middle-click and open-in-new-tab all work; the
+    // rest of the row is clickable too (EmployeeTable's onRowClick).
+    cell: ({ row }) => (
+      <Link
+        to={employeePath(row.original.id)}
+        state={FROM_DIRECTORY_STATE}
+        className="font-medium hover:underline"
+      >
+        {row.original.firstName} {row.original.lastName}
+      </Link>
+    ),
   }),
   columnHelper.display({
     id: 'department',

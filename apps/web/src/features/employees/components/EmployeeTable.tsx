@@ -17,10 +17,12 @@ export function EmployeeTable({
   employees,
   isLoading,
   isError,
+  onRowClick,
 }: {
   employees: EmployeeListItemResponse[];
   isLoading: boolean;
   isError: boolean;
+  onRowClick: (employee: EmployeeListItemResponse) => void;
 }) {
   const table = useTable({
     features: employeeTableFeatures,
@@ -61,7 +63,16 @@ export function EmployeeTable({
           {!isLoading &&
             !isError &&
             rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className="cursor-pointer"
+                onClick={(event) => {
+                  // The name cell's own <Link> already navigates — and
+                  // handles modifier-click. Don't navigate twice.
+                  if ((event.target as HTMLElement).closest('a') !== null) return;
+                  onRowClick(row.original);
+                }}
+              >
                 {/* getAllCells, not getVisibleCells — visibility is an
                 optional v9 feature we don't include; all columns are
                 always shown here. */}
