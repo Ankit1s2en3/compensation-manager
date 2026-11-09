@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 import type { AuthenticatedUserResponse } from '@/api/types';
-import { clearAuth, getStoredAuth, setAuth } from '@/auth/storage';
+
+import { clearAuth, getStoredAuth, setAuth } from './storage';
 
 /**
  * Three states, not two. A token present in localStorage but not yet checked
